@@ -84,35 +84,66 @@ smtp_servers:
       response_time_threshold: 5000
       alerts_enabled: false
     
-  - name: "icloud_03"
-    enabled: false                         # ❌ DÉSACTIVÉ (activez quand prêt)
-    smtp_host: "smtp.mail.me.com"
+  # Gmail Comptes (vos comptes Gmail)
+  - name: "gmail_01"
+    enabled: true                          # ✅ ACTIF
+    smtp_host: "smtp.gmail.com"
     smtp_port: 587
-    email: "compte3@icloud.com"            # ⚠️ REMPLACER
-    username: "compte3@icloud.com"
-    password: "votre-mot-de-passe-app"     # ⚠️ REMPLACER
+    email: "uwiragiyevi12@gmail.com"       # ✅ VOTRE COMPTE GMAIL 1
+    username: "uwiragiyevi12@gmail.com"
+    password: "lope skuq zrio batj"        # ✅ MOT DE PASSE D'APP GMAIL
     smtp_api: false
     api_endpoint: null
     encryption: "starttls"
-    daily_limit: 800
-    hourly_limit: 100
-    min_delay_ms: 1000
+    daily_limit: 500                       # Limite Gmail plus conservative
+    hourly_limit: 50
+    min_delay_ms: 2000                     # 2 secondes minimum (Gmail plus strict)
     dkim: null
     custom_headers: {}
-    priority: 1
+    priority: 2                            # Priorité moyenne
     weight: 100
-    preferred_domains: ["*"]
+    preferred_domains: ["gmail.com", "googlemail.com"]
     retry_config:
       max_attempts: 3
-      initial_delay: 5
+      initial_delay: 10
       backoff_multiplier: 2.0
       max_delay: 300
       retry_on_errors: ["timeout", "connection_refused"]
     monitoring:
       enabled: true
-      failure_rate_threshold: 10.0
-      response_time_threshold: 5000
-      alerts_enabled: false
+      failure_rate_threshold: 8.0          # Plus strict pour Gmail
+      response_time_threshold: 8000
+      alerts_enabled: true
+      
+  - name: "gmail_02"
+    enabled: true                          # ✅ ACTIF
+    smtp_host: "smtp.gmail.com"
+    smtp_port: 587
+    email: "niyitegekainnervedaste@gmail.com"  # ✅ VOTRE COMPTE GMAIL 2
+    username: "niyitegekainnervedaste@gmail.com"
+    password: "vncw fdlm xcly ceon"        # ✅ MOT DE PASSE D'APP GMAIL
+    smtp_api: false
+    api_endpoint: null
+    encryption: "starttls"
+    daily_limit: 500                       # Limite Gmail
+    hourly_limit: 50
+    min_delay_ms: 2000                     # 2 secondes minimum
+    dkim: null
+    custom_headers: {}
+    priority: 2
+    weight: 100
+    preferred_domains: ["gmail.com", "googlemail.com"]
+    retry_config:
+      max_attempts: 3
+      initial_delay: 10
+      backoff_multiplier: 2.0
+      max_delay: 300
+      retry_on_errors: ["timeout", "connection_refused"]
+    monitoring:
+      enabled: true
+      failure_rate_threshold: 8.0
+      response_time_threshold: 8000
+      alerts_enabled: true
     
   # Ajoutez vos 17 autres comptes iCloud ici...
   # Copiez le bloc ci-dessus et changez les noms/emails/mots de passe

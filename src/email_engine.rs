@@ -175,7 +175,7 @@ impl UltraEmailEngine {
     }
     
     pub async fn run_tests(&self, test_type: Option<String>) -> Result<()> {
-        info!("🧪 Exécution des tests");
+        info!("🧪 Tests système - Vérification des composants");
         
         match test_type.as_deref() {
             Some("smtp") => self.test_smtp_connections().await?,
@@ -183,10 +183,12 @@ impl UltraEmailEngine {
             Some("variables") => self.test_variable_substitution().await?,
             Some("performance") => self.test_performance().await?,
             None => {
+                info!("🔍 Tests complets - Tous les composants");
                 self.test_smtp_connections().await?;
                 self.test_header_generation().await?;
                 self.test_variable_substitution().await?;
                 self.test_performance().await?;
+                info!("✅ Tous les tests système réussis - Prêt pour production");
             }
             Some(unknown) => {
                 warn!("⚠️ Type de test inconnu: {}", unknown);
