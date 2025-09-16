@@ -203,27 +203,31 @@ impl UltraEmailEngine {
             variables_groupe.insert("DOMAINE_GROUPE".to_string(), domaine.clone());
             variables_groupe.insert("NOMBRE_DESTINATAIRES".to_string(), emails_groupe.len().to_string());
             
-            // Adapter le message selon le domaine
+            // Appliquer les variables du template aux groupes
+            let sujet_base = self.process_variables(subject_template, &variables_groupe);
+            let expediteur_base = self.process_variables(sender_template, &variables_groupe);
+            
+            // Adapter selon le domaine avec variables dynamiques
             let (sujet_adapte, expediteur_adapte): (String, String) = match domaine.as_str() {
                 "gmail.com" => (
-                    "🎯 Spécial Gmail - Innovation pour nos partenaires".to_string(),
-                    "Équipe Innovation - Solutions Gmail".to_string()
+                    format!("🎯 Gmail - {}", sujet_base),
+                    format!("Équipe Gmail - {}", expediteur_base)
                 ),
                 "yahoo.com" => (
-                    "🚀 Opportunité Yahoo - Découvrez nos services".to_string(),
-                    "Département Commercial - Yahoo Partners".to_string()
+                    format!("🚀 Yahoo - {}", sujet_base),
+                    format!("Service Yahoo - {}", expediteur_base)
                 ),
                 "orange.fr" => (
-                    "🟠 Offre Orange - Partenariat privilégié".to_string(),
-                    "Équipe Orange - Relations Clients".to_string()
+                    format!("🟠 Orange - {}", sujet_base),
+                    format!("Équipe Orange - {}", expediteur_base)
                 ),
                 "aol.com" => (
-                    "📧 Message AOL - Collaboration spéciale".to_string(),
-                    "Service Client - AOL Division".to_string()
+                    format!("📧 AOL - {}", sujet_base),
+                    format!("Service AOL - {}", expediteur_base)
                 ),
                 _ => (
-                    format!("Notification {} - {}", domaine, chrono::Utc::now().format("%d/%m/%Y")),
-                    "Équipe Commerciale - Relations Clients".to_string()
+                    format!("{} - {}", domaine, sujet_base),
+                    format!("Service {} - {}", domaine, expediteur_base)
                 )
             };
             
@@ -243,18 +247,18 @@ impl UltraEmailEngine {
                 }
             }
             
-            // Corps personnalisé pour ce groupe de domaine
-            let corps_groupe = format!("
-Chers partenaires {},
+            // Corps personnalisé pour ce groupe de domaine (UTF-8 correct)
+            let corps_groupe = format!(
+"Chers partenaires {},
 
-Nous nous adressons spécialement aux utilisateurs {} pour vous présenter nos dernières innovations.
+Nous nous adressons specialement aux utilisateurs {} pour vous presenter nos dernieres innovations.
 
-Cette offre exclusive est réservée à notre communauté {} ({} destinataires sélectionnés).
+Cette offre exclusive est reservee a notre communaute {} ({} destinataires selectionnes).
 
-🎯 Avantages spéciaux pour {} :
-• Support prioritaire dédié
-• Tarifs préférentiels 
-• Accès anticipé aux nouveautés
+🎯 Avantages speciaux pour {} :
+• Support prioritaire dedie
+• Tarifs preferentiels 
+• Acces anticipe aux nouveautes
 
 Date limite: {}
 
@@ -262,9 +266,8 @@ Cordialement,
 {}
 
 ---
-Message destiné aux utilisateurs {}
-Pour vous désabonner: répondez 'STOP'
-            ",
+Message destine aux utilisateurs {}
+Pour vous desabonner: repondez 'STOP'",
             domaine,
             domaine,
             domaine,
@@ -311,6 +314,7 @@ Pour vous désabonner: répondez 'STOP'
         
         data.insert("NOM".to_string(), local_part.to_uppercase());
         data.insert("PRENOM".to_string(), local_part.to_string());
+        data.insert("EMAIL".to_string(), email.to_string());  // ✅ AJOUTÉ
         data.insert("ENTREPRISE".to_string(), "Entreprise Client".to_string());
         data.insert("VILLE".to_string(), "Paris".to_string());
         data.insert("DATE".to_string(), chrono::Utc::now().format("%d/%m/%Y").to_string());
