@@ -143,8 +143,8 @@ def Gmass(email):
             'Cookie': 'GMassUniqueID=558d3296-b37b-4cb8-8c7a-3e188c22e793; GMassAffiliateID='
         }
         
-        # Vous pouvez remplacer cette clé par la vôtre en vous inscrivant sur Gmass.co
-        api_key = '3c5c8060-844a-4cb5-ae6e-b6615971ef4d'
+        # Clé API personnalisée fournie par l'utilisateur
+        api_key = '5449b291-3f72-498d-9316-362f4ec7168b'
         url = f'https://verify.gmass.co/verify?email={email}&key={api_key}'
         
         # Timeout plus long pour éviter les erreurs de connexion
