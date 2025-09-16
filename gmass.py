@@ -47,8 +47,8 @@ class RateLimiter:
             # Enregistrer cette requête
             self.requests.append(now)
 
-# Instance globale du rate limiter
-rate_limiter = RateLimiter(max_requests_per_second=1)  # 1 requête par seconde pour éviter la surcharge								
+# Instance globale du rate limiter - OPTIMISÉ POUR VOLUME
+rate_limiter = RateLimiter(max_requests_per_second=10)  # 10 requêtes par seconde pour traitement rapide								
 
 def Banner():
     clear = '\x1b[0m'
@@ -313,7 +313,7 @@ def Main():
                 nb_threads = 5
             
             print(f"{Fore.CYAN}Démarrage de la validation avec {nb_threads} threads...")
-            print(f"{Fore.YELLOW}Note: Le debouncing est activé (1 requête/seconde max) pour éviter la surcharge du serveur.")
+            print(f"{Fore.YELLOW}Note: Le debouncing est activé (10 requêtes/seconde max) - OPTIMISÉ POUR GROS VOLUMES.")
             
             # Nettoyer les anciens fichiers de résultats
             for fichier in ['Mail_OK.txt', 'Mail_FAILED.txt', 'Mail_UNKNOWN.txt', 'Mail_TIMEOUT.txt', 'Mail_ERROR.txt']:
