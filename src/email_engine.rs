@@ -258,7 +258,7 @@ Pour vous désabonner: répondez 'STOP'",
             domaine
             );
             
-            // Version TEXTE SIMPLE pour éviter problèmes d'encodage HTML
+            // Version TEXTE SIMPLE avec lien cliquable
             let corps_final = format!("Chers partenaires {},
 
 Nous nous adressons specialement aux utilisateurs {} pour vous presenter nos dernieres innovations.
@@ -269,6 +269,9 @@ Avantages speciaux pour {} :
 - Support prioritaire dedie
 - Tarifs preferentiels 
 - Acces anticipe aux nouveautes
+
+👆 CLIQUEZ ICI pour decouvrir l'offre complete :
+https://www.example.com/offre-speciale?domain={}&ref={}
 
 Date limite: {}
 
@@ -283,6 +286,8 @@ Pour vous desabonner: repondez STOP",
             domaine,
             emails_groupe.len(),
             domaine,
+            domaine,
+            chrono::Utc::now().format("%Y%m%d"),
             chrono::Utc::now().format("%d/%m/%Y"),
             expediteur_adapte,
             domaine
