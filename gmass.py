@@ -20,35 +20,126 @@ from datetime import datetime, timedelta
 # Initialiser colorama pour Windows
 init(autoreset=True)
 
-# Configuration du debouncing
-class RateLimiter:
-    def __init__(self, max_requests_per_second=2):
-        self.max_requests = max_requests_per_second
+# Configuration du debouncing adaptatif intelligent
+class AdaptiveRateLimiter:
+    def __init__(self, initial_rate=5, min_rate=1, max_rate=15):
+        self.current_rate = initial_rate
+        self.min_rate = min_rate
+        self.max_rate = max_rate
         self.requests = deque()
         self.lock = threading.Lock()
+        
+        # Statistiques pour l'adaptation
+        self.success_count = 0
+        self.timeout_count = 0
+        self.error_count = 0
+        self.total_requests = 0
+        self.last_adjustment = time.time()
+        self.adjustment_interval = 30  # Ajuster toutes les 30 secondes
+        
+        print(f"🧠 Rate Limiter Adaptatif initialisé: {self.current_rate} req/sec")
     
     def wait_if_needed(self):
         with self.lock:
             now = time.time()
-            # Supprimer les requêtes anciennes (plus d'une seconde)
+            
+            # Nettoyer les anciennes requêtes
             while self.requests and self.requests[0] <= now - 1:
                 self.requests.popleft()
             
-            # Si on a atteint la limite, attendre
-            if len(self.requests) >= self.max_requests:
+            # Attendre si nécessaire selon le taux actuel
+            if len(self.requests) >= self.current_rate:
                 sleep_time = 1 - (now - self.requests[0])
                 if sleep_time > 0:
                     time.sleep(sleep_time)
-                    # Nettoyer à nouveau après l'attente
+                    # Nettoyer à nouveau
                     now = time.time()
                     while self.requests and self.requests[0] <= now - 1:
                         self.requests.popleft()
             
             # Enregistrer cette requête
             self.requests.append(now)
+    
+    def report_success(self):
+        """Signaler une requête réussie"""
+        with self.lock:
+            self.success_count += 1
+            self.total_requests += 1
+            self._maybe_adjust_rate()
+    
+    def report_timeout(self):
+        """Signaler un timeout - ralentir"""
+        with self.lock:
+            self.timeout_count += 1
+            self.total_requests += 1
+            
+            # Ralentir immédiatement en cas de timeout
+            if self.current_rate > self.min_rate:
+                old_rate = self.current_rate
+                self.current_rate = max(self.min_rate, self.current_rate - 2)
+                print(f"⚠️ TIMEOUT détecté ! Ralentissement: {old_rate} → {self.current_rate} req/sec")
+            
+            self._maybe_adjust_rate()
+    
+    def report_error(self):
+        """Signaler une erreur"""
+        with self.lock:
+            self.error_count += 1
+            self.total_requests += 1
+            self._maybe_adjust_rate()
+    
+    def _maybe_adjust_rate(self):
+        """Ajuster le taux selon les performances"""
+        now = time.time()
+        
+        # Ajuster seulement si assez de temps s'est écoulé et qu'on a des données
+        if (now - self.last_adjustment < self.adjustment_interval or 
+            self.total_requests < 20):
+            return
+        
+        # Calculer les taux de succès et d'erreur
+        success_rate = self.success_count / self.total_requests
+        timeout_rate = self.timeout_count / self.total_requests
+        error_rate = self.error_count / self.total_requests
+        
+        old_rate = self.current_rate
+        
+        # Logique d'ajustement
+        if timeout_rate > 0.1:  # Plus de 10% de timeouts
+            # Ralentir agressivement
+            self.current_rate = max(self.min_rate, self.current_rate - 3)
+            print(f"🐌 Trop de timeouts ({timeout_rate*100:.1f}%) ! Ralentissement: {old_rate} → {self.current_rate} req/sec")
+            
+        elif timeout_rate > 0.05:  # Plus de 5% de timeouts
+            # Ralentir modérément
+            self.current_rate = max(self.min_rate, self.current_rate - 1)
+            print(f"⚠️ Timeouts détectés ({timeout_rate*100:.1f}%) ! Ajustement: {old_rate} → {self.current_rate} req/sec")
+            
+        elif success_rate > 0.9 and timeout_rate < 0.02:  # Plus de 90% de succès, moins de 2% timeouts
+            # Accélérer prudemment
+            self.current_rate = min(self.max_rate, self.current_rate + 1)
+            print(f"🚀 Bonnes performances ({success_rate*100:.1f}% succès) ! Accélération: {old_rate} → {self.current_rate} req/sec")
+        
+        # Réinitialiser les compteurs
+        self.success_count = 0
+        self.timeout_count = 0
+        self.error_count = 0
+        self.total_requests = 0
+        self.last_adjustment = now
+    
+    def get_stats(self):
+        """Obtenir les statistiques actuelles"""
+        with self.lock:
+            return {
+                'current_rate': self.current_rate,
+                'total_requests': self.total_requests,
+                'success_count': self.success_count,
+                'timeout_count': self.timeout_count,
+                'error_count': self.error_count
+            }
 
-# Instance globale du rate limiter - OPTIMISÉ POUR VOLUME
-rate_limiter = RateLimiter(max_requests_per_second=10)  # 10 requêtes par seconde pour traitement rapide								
+# Instance globale du rate limiter adaptatif
+rate_limiter = AdaptiveRateLimiter(initial_rate=5, min_rate=1, max_rate=12)  # Débute à 5 req/sec, s'adapte entre 1-12								
 
 def Banner():
     clear = '\x1b[0m'
@@ -170,6 +261,7 @@ def Gmass(email):
                     with open('Mail_OK.txt', 'a', encoding='utf-8') as f:
                         f.write(email + '\n')
                     progress_tracker.update('valid')
+                    rate_limiter.report_success()  # Signaler le succès
                     return 'valid'
                     
                 elif success and not valid:
@@ -177,6 +269,7 @@ def Gmass(email):
                     with open('Mail_FAILED.txt', 'a', encoding='utf-8') as f:
                         f.write(email + '\n')
                     progress_tracker.update('invalid')
+                    rate_limiter.report_success()  # C'est un succès API même si email invalide
                     return 'invalid'
                     
                 else:
@@ -184,6 +277,7 @@ def Gmass(email):
                     with open('Mail_ERROR.txt', 'a', encoding='utf-8') as f:
                         f.write(f"{email} - Status: {status}, SMTP: {smtp_code}\n")
                     progress_tracker.update('error')
+                    rate_limiter.report_error()  # Signaler l'erreur
                     return 'error'
                     
             # Ancien format de réponse avec StatusCode
@@ -263,6 +357,7 @@ def Gmass(email):
         with open('Mail_TIMEOUT.txt', 'a', encoding='utf-8') as f:
             f.write(email + '\n')
         progress_tracker.update('error')
+        rate_limiter.report_timeout()  # Signaler le timeout au rate limiter
         return 'timeout'
         
     except requests.exceptions.RequestException as e:
@@ -270,6 +365,7 @@ def Gmass(email):
         with open('Mail_ERROR.txt', 'a', encoding='utf-8') as f:
             f.write(f"{email} - {str(e)}\n")
         progress_tracker.update('error')
+        rate_limiter.report_error()  # Signaler l'erreur au rate limiter
         return 'error'
         
     except Exception as e:
@@ -277,6 +373,7 @@ def Gmass(email):
         with open('Mail_ERROR.txt', 'a', encoding='utf-8') as f:
             f.write(f"{email} - {str(e)}\n")
         progress_tracker.update('error')
+        rate_limiter.report_error()  # Signaler l'erreur au rate limiter
         return 'error'
 
 def Main():
@@ -313,7 +410,10 @@ def Main():
                 nb_threads = 5
             
             print(f"{Fore.CYAN}Démarrage de la validation avec {nb_threads} threads...")
-            print(f"{Fore.YELLOW}Note: Le debouncing est activé (10 requêtes/seconde max) - OPTIMISÉ POUR GROS VOLUMES.")
+            print(f"{Fore.YELLOW}🧠 Rate Limiter ADAPTATIF activé - S'ajuste automatiquement selon les performances !")
+            print(f"{Fore.CYAN}   • Débute à 5 req/sec")
+            print(f"{Fore.CYAN}   • Ralentit si timeouts détectés (min: 1 req/sec)")
+            print(f"{Fore.CYAN}   • Accélère si tout va bien (max: 12 req/sec)")
             
             # Nettoyer les anciens fichiers de résultats
             for fichier in ['Mail_OK.txt', 'Mail_FAILED.txt', 'Mail_UNKNOWN.txt', 'Mail_TIMEOUT.txt', 'Mail_ERROR.txt']:
@@ -335,6 +435,20 @@ def Main():
             print(f"{Fore.MAGENTA}Erreurs/Timeouts: {progress_tracker.errors}")
             print(f"{Fore.YELLOW}Total traité: {progress_tracker.processed}/{progress_tracker.total}")
             print(f"{Fore.CYAN}Temps total: {end_time - start_time:.2f} secondes")
+            
+            # Statistiques du rate limiter adaptatif
+            stats = rate_limiter.get_stats()
+            vitesse_finale = progress_tracker.processed / (end_time - start_time) if (end_time - start_time) > 0 else 0
+            print(f"\n{Fore.CYAN}=== PERFORMANCE ADAPTATIVE ===")
+            print(f"{Fore.YELLOW}🧠 Taux final: {rate_limiter.current_rate} req/sec")
+            print(f"{Fore.YELLOW}⚡ Vitesse moyenne: {vitesse_finale:.1f} emails/sec")
+            
+            # Estimation pour 3500 emails
+            if vitesse_finale > 0:
+                temps_3500 = 3500 / vitesse_finale
+                minutes = int(temps_3500 // 60)
+                secondes = int(temps_3500 % 60)
+                print(f"{Fore.CYAN}📊 Estimation pour 3500 emails: ~{minutes}m {secondes}s")
             
             if progress_tracker.valid > 0:
                 print(f"{Fore.GREEN}✓ Emails valides sauvés dans: Mail_OK.txt")
