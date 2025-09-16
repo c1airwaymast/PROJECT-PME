@@ -153,28 +153,110 @@ def Gmass(email):
         
         result = response.text
         
-        # Analyser la réponse
-        if '"SMTPCode":250' in result:
-            print(f"{Fore.YELLOW}[ VALIDE --> ] {Fore.GREEN}{email}")
-            with open('Mail_OK.txt', 'a', encoding='utf-8') as f:
-                f.write(email + '\n')
-            progress_tracker.update('valid')
-            return 'valid'
+        # Analyser la réponse JSON
+        try:
+            import json
+            data = json.loads(result)
             
-        elif '"SMTPCode":550' in result:
-            print(f"{Fore.YELLOW}[ INVALIDE --> ] {Fore.RED}{email}")
-            with open('Mail_FAILED.txt', 'a', encoding='utf-8') as f:
-                f.write(email + '\n')
-            progress_tracker.update('invalid')
-            return 'invalid'
-            
-        else:
-            # Code de réponse inconnu
-            print(f"{Fore.YELLOW}[ INCONNU --> ] {Fore.MAGENTA}{email} (Réponse: {result[:100]}...)")
-            with open('Mail_UNKNOWN.txt', 'a', encoding='utf-8') as f:
-                f.write(f"{email} - {result[:200]}\n")
-            progress_tracker.update('error')
-            return 'unknown'
+            # Format de réponse GMASS actuel
+            if 'Success' in data:
+                success = data.get('Success', False)
+                valid = data.get('Valid', False)
+                status = data.get('Status', 'Unknown')
+                smtp_code = data.get('SMTPCode', 0)
+                
+                if success and valid:
+                    print(f"{Fore.YELLOW}[ VALIDE --> ] {Fore.GREEN}{email}")
+                    with open('Mail_OK.txt', 'a', encoding='utf-8') as f:
+                        f.write(email + '\n')
+                    progress_tracker.update('valid')
+                    return 'valid'
+                    
+                elif success and not valid:
+                    print(f"{Fore.YELLOW}[ INVALIDE --> ] {Fore.RED}{email} ({status})")
+                    with open('Mail_FAILED.txt', 'a', encoding='utf-8') as f:
+                        f.write(email + '\n')
+                    progress_tracker.update('invalid')
+                    return 'invalid'
+                    
+                else:
+                    print(f"{Fore.YELLOW}[ ERREUR --> ] {Fore.MAGENTA}{email} (Status: {status}, SMTP: {smtp_code})")
+                    with open('Mail_ERROR.txt', 'a', encoding='utf-8') as f:
+                        f.write(f"{email} - Status: {status}, SMTP: {smtp_code}\n")
+                    progress_tracker.update('error')
+                    return 'error'
+                    
+            # Ancien format de réponse avec StatusCode
+            elif 'StatusCode' in data:
+                status_code = data.get('StatusCode', 0)
+                valid = data.get('Valid', False)
+                status = data.get('Status', 'Unknown')
+                
+                if status_code == 250 and valid:
+                    print(f"{Fore.YELLOW}[ VALIDE --> ] {Fore.GREEN}{email}")
+                    with open('Mail_OK.txt', 'a', encoding='utf-8') as f:
+                        f.write(email + '\n')
+                    progress_tracker.update('valid')
+                    return 'valid'
+                    
+                elif status_code == 550 or not valid:
+                    print(f"{Fore.YELLOW}[ INVALIDE --> ] {Fore.RED}{email} ({status})")
+                    with open('Mail_FAILED.txt', 'a', encoding='utf-8') as f:
+                        f.write(email + '\n')
+                    progress_tracker.update('invalid')
+                    return 'invalid'
+                    
+                else:
+                    print(f"{Fore.YELLOW}[ INCONNU --> ] {Fore.MAGENTA}{email} (Status: {status}, Code: {status_code})")
+                    with open('Mail_UNKNOWN.txt', 'a', encoding='utf-8') as f:
+                        f.write(f"{email} - Status: {status}, Code: {status_code}\n")
+                    progress_tracker.update('error')
+                    return 'unknown'
+                    
+            # Ancien format de réponse (fallback)
+            elif '"SMTPCode":250' in result:
+                print(f"{Fore.YELLOW}[ VALIDE --> ] {Fore.GREEN}{email}")
+                with open('Mail_OK.txt', 'a', encoding='utf-8') as f:
+                    f.write(email + '\n')
+                progress_tracker.update('valid')
+                return 'valid'
+                
+            elif '"SMTPCode":550' in result:
+                print(f"{Fore.YELLOW}[ INVALIDE --> ] {Fore.RED}{email}")
+                with open('Mail_FAILED.txt', 'a', encoding='utf-8') as f:
+                    f.write(email + '\n')
+                progress_tracker.update('invalid')
+                return 'invalid'
+                
+            else:
+                print(f"{Fore.YELLOW}[ INCONNU --> ] {Fore.MAGENTA}{email} (Réponse: {result[:100]}...)")
+                with open('Mail_UNKNOWN.txt', 'a', encoding='utf-8') as f:
+                    f.write(f"{email} - {result[:200]}\n")
+                progress_tracker.update('error')
+                return 'unknown'
+                
+        except json.JSONDecodeError:
+            # Si ce n'est pas du JSON, utiliser l'ancienne méthode
+            if '"SMTPCode":250' in result:
+                print(f"{Fore.YELLOW}[ VALIDE --> ] {Fore.GREEN}{email}")
+                with open('Mail_OK.txt', 'a', encoding='utf-8') as f:
+                    f.write(email + '\n')
+                progress_tracker.update('valid')
+                return 'valid'
+                
+            elif '"SMTPCode":550' in result:
+                print(f"{Fore.YELLOW}[ INVALIDE --> ] {Fore.RED}{email}")
+                with open('Mail_FAILED.txt', 'a', encoding='utf-8') as f:
+                    f.write(email + '\n')
+                progress_tracker.update('invalid')
+                return 'invalid'
+                
+            else:
+                print(f"{Fore.YELLOW}[ INCONNU --> ] {Fore.MAGENTA}{email} (Réponse non-JSON: {result[:100]}...)")
+                with open('Mail_UNKNOWN.txt', 'a', encoding='utf-8') as f:
+                    f.write(f"{email} - {result[:200]}\n")
+                progress_tracker.update('error')
+                return 'unknown'
             
     except requests.exceptions.Timeout:
         print(f"{Fore.RED}[ TIMEOUT --> ] {email}")
