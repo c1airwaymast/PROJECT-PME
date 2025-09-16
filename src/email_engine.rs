@@ -207,29 +207,9 @@ impl UltraEmailEngine {
             let sujet_base = self.process_variables(subject_template, &variables_groupe);
             let expediteur_base = self.process_variables(sender_template, &variables_groupe);
             
-            // Adapter selon le domaine avec variables dynamiques
-            let (sujet_adapte, expediteur_adapte): (String, String) = match domaine.as_str() {
-                "gmail.com" => (
-                    format!("🎯 Gmail - {}", sujet_base),
-                    format!("Équipe Gmail - {}", expediteur_base)
-                ),
-                "yahoo.com" => (
-                    format!("🚀 Yahoo - {}", sujet_base),
-                    format!("Service Yahoo - {}", expediteur_base)
-                ),
-                "orange.fr" => (
-                    format!("🟠 Orange - {}", sujet_base),
-                    format!("Équipe Orange - {}", expediteur_base)
-                ),
-                "aol.com" => (
-                    format!("📧 AOL - {}", sujet_base),
-                    format!("Service AOL - {}", expediteur_base)
-                ),
-                _ => (
-                    format!("{} - {}", domaine, sujet_base),
-                    format!("Service {} - {}", domaine, expediteur_base)
-                )
-            };
+            // Utiliser EXACTEMENT vos templates sans préfixes
+            let sujet_adapte = sujet_base;
+            let expediteur_adapte = expediteur_base;
             
             info!("   📝 Sujet groupe: {}", sujet_adapte);
             info!("   👤 From groupe: {}", expediteur_adapte);
