@@ -258,7 +258,53 @@ Pour vous désabonner: répondez 'STOP'",
             domaine
             );
             
-            let email_groupe = message_builder.body(corps_groupe)?;
+            // Créer version HTML pour Orange et Yahoo
+            let corps_final = if domaine == "orange.fr" || domaine == "yahoo.com" {
+                // Version HTML pour Orange et Yahoo
+                format!(r#"<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Message professionnel</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #2c5aa0;">Chers partenaires {}</h2>
+        
+        <p>Nous nous adressons spécialement aux utilisateurs <strong>{}</strong> pour vous présenter nos dernières innovations.</p>
+        
+        <p>Cette offre exclusive est réservée à notre communauté {} ({} destinataires sélectionnés).</p>
+        
+        <div style="background: #f5f5f5; padding: 15px; border-left: 4px solid #2c5aa0; margin: 20px 0;">
+            <h3 style="margin-top: 0;">🎯 Avantages spéciaux pour {} :</h3>
+            <ul>
+                <li>Support prioritaire dédié</li>
+                <li>Tarifs préférentiels</li>
+                <li>Accès anticipé aux nouveautés</li>
+            </ul>
+        </div>
+        
+        <p><strong>Date limite: {}</strong></p>
+        
+        <p>Cordialement,<br>
+        <strong>{}</strong></p>
+        
+        <hr style="border: 1px solid #ddd; margin: 20px 0;">
+        <p style="font-size: 12px; color: #666;">
+            Message destiné aux utilisateurs {}<br>
+            Pour vous désabonner: répondez 'STOP'
+        </p>
+    </div>
+</body>
+</html>"#,
+                domaine, domaine, domaine, emails_groupe.len(), domaine,
+                chrono::Utc::now().format("%d/%m/%Y"), expediteur_adapte, domaine)
+            } else {
+                // Version texte pour Gmail et AOL
+                corps_groupe
+            };
+            
+            let email_groupe = message_builder.body(corps_final)?;
             
             // Envoyer le BCC pour ce groupe
             let debut_envoi = std::time::Instant::now();
@@ -292,7 +338,17 @@ Pour vous désabonner: répondez 'STOP'",
         let local_part = email.split('@').next().unwrap_or("client");
         let domaine = email.split('@').nth(1).unwrap_or("exemple.com");
         
-        data.insert("NOM".to_string(), local_part.to_uppercase());
+        // NOM = Première lettre majuscule, reste minuscule (anti-spam)
+        let nom_formate = if !local_part.is_empty() {
+            let mut chars = local_part.chars();
+            match chars.next() {
+                None => local_part.to_string(),
+                Some(first) => first.to_uppercase().collect::<String>() + &chars.as_str().to_lowercase(),
+            }
+        } else {
+            local_part.to_string()
+        };
+        data.insert("NOM".to_string(), nom_formate);
         data.insert("PRENOM".to_string(), local_part.to_string());
         data.insert("EMAIL".to_string(), email.to_string());  // ✅ AJOUTÉ
         data.insert("ENTREPRISE".to_string(), "Entreprise Client".to_string());
