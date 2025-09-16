@@ -146,9 +146,11 @@ impl UltraEmailEngine {
     ) -> Result<usize> {
         use lettre::{Message, SmtpTransport, Transport};
         use lettre::transport::smtp::authentication::Credentials;
+        use lettre::message::Mailbox;
         use rand::Rng;
+        use std::collections::HashMap;
         
-        info!("📤 ENVOI INDIVIDUALISÉ de {} emails avec variables uniques...", recipients.len());
+        info!("📤 ENVOI BCC INTELLIGENT avec variables par groupe - {} emails", recipients.len());
         
         // Sélectionner un SMTP actif
         let smtp_servers = self.config.get_active_smtp_servers();
@@ -156,10 +158,10 @@ impl UltraEmailEngine {
             return Err(anyhow::anyhow!("Aucun serveur SMTP actif"));
         }
         
-        let smtp_config = &smtp_servers[0]; // Premier SMTP actif
+        let smtp_config = &smtp_servers[0];
         info!("🔧 Utilisation SMTP: {} ({})", smtp_config.name, smtp_config.email);
         
-        // Créer la connexion SMTP une seule fois
+        // Créer la connexion SMTP
         let creds = Credentials::new(smtp_config.username.clone(), smtp_config.password.clone());
         
         let mailer = if smtp_config.smtp_host.contains("gmail.com") {
@@ -176,83 +178,128 @@ impl UltraEmailEngine {
                 .build()
         };
         
-        let mut emails_envoyes = 0;
-        let debut_total = std::time::Instant::now();
+        // GROUPER LES DESTINATAIRES PAR DOMAINE
+        let mut groupes_par_domaine: HashMap<String, Vec<String>> = HashMap::new();
         
-        // ENVOYER CHAQUE EMAIL INDIVIDUELLEMENT AVEC SES PROPRES VARIABLES
-        for (index, recipient_email) in recipients.iter().enumerate() {
-            info!("📧 [{}/{}] Traitement: {}", index + 1, recipients.len(), recipient_email);
+        for email in recipients {
+            let domaine = email.split('@').nth(1).unwrap_or("autre").to_string();
+            groupes_par_domaine.entry(domaine).or_insert_with(Vec::new).push(email.clone());
+        }
+        
+        info!("🔄 {} groupes de domaines détectés", groupes_par_domaine.len());
+        
+        let mut total_envoyes = 0;
+        
+        // ENVOYER UN EMAIL BCC PAR GROUPE DE DOMAINE
+        for (domaine, emails_groupe) in groupes_par_domaine {
+            info!("📦 Groupe {}: {} emails", domaine, emails_groupe.len());
             
-            // Extraire les données spécifiques à CE destinataire
-            let recipient_data = self.extract_recipient_info(recipient_email);
+            // Prendre le premier email du groupe pour les variables de base
+            let email_representatif = &emails_groupe[0];
+            let recipient_data = self.extract_recipient_info(email_representatif);
             
-            // Appliquer les variables UNIQUES pour ce destinataire
-            let sujet_personnalise = self.process_variables(subject_template, &recipient_data);
-            let expediteur_personnalise = self.process_variables(sender_template, &recipient_data);
+            // Variables adaptées au DOMAINE
+            let mut variables_groupe = recipient_data.clone();
+            variables_groupe.insert("DOMAINE_GROUPE".to_string(), domaine.clone());
+            variables_groupe.insert("NOMBRE_DESTINATAIRES".to_string(), emails_groupe.len().to_string());
             
-            info!("   📝 Sujet: {}", sujet_personnalise);
-            info!("   👤 From: {}", expediteur_personnalise);
+            // Adapter le message selon le domaine
+            let (sujet_adapte, expediteur_adapte): (String, String) = match domaine.as_str() {
+                "gmail.com" => (
+                    "🎯 Spécial Gmail - Innovation pour nos partenaires".to_string(),
+                    "Équipe Innovation - Solutions Gmail".to_string()
+                ),
+                "yahoo.com" => (
+                    "🚀 Opportunité Yahoo - Découvrez nos services".to_string(),
+                    "Département Commercial - Yahoo Partners".to_string()
+                ),
+                "orange.fr" => (
+                    "🟠 Offre Orange - Partenariat privilégié".to_string(),
+                    "Équipe Orange - Relations Clients".to_string()
+                ),
+                "aol.com" => (
+                    "📧 Message AOL - Collaboration spéciale".to_string(),
+                    "Service Client - AOL Division".to_string()
+                ),
+                _ => (
+                    format!("Notification {} - {}", domaine, chrono::Utc::now().format("%d/%m/%Y")),
+                    "Équipe Commerciale - Relations Clients".to_string()
+                )
+            };
             
-            // Corps personnalisé pour ce destinataire
-            let corps_personnalise = format!("
-Bonjour {},
+            info!("   📝 Sujet groupe: {}", sujet_adapte);
+            info!("   👤 From groupe: {}", expediteur_adapte);
+            
+            // Construire le message BCC pour ce groupe
+            let mut message_builder = Message::builder()
+                .from(format!("{} <{}>", expediteur_adapte, smtp_config.email).parse()?)
+                .to(smtp_config.email.parse()?) // TO = expéditeur
+                .subject(sujet_adapte);
+            
+            // Ajouter tous les emails du groupe en BCC
+            for email in &emails_groupe {
+                if let Ok(mailbox) = email.parse::<Mailbox>() {
+                    message_builder = message_builder.bcc(mailbox);
+                }
+            }
+            
+            // Corps personnalisé pour ce groupe de domaine
+            let corps_groupe = format!("
+Chers partenaires {},
 
-Votre entreprise {} basée à {} retient toute notre attention.
+Nous nous adressons spécialement aux utilisateurs {} pour vous présenter nos dernières innovations.
 
-Après des années de collaboration, nous sommes heureux de vous présenter nos dernières innovations spécialement adaptées à votre secteur.
+Cette offre exclusive est réservée à notre communauté {} ({} destinataires sélectionnés).
 
-Cette communication vous est adressée personnellement en tant que client privilégié.
+🎯 Avantages spéciaux pour {} :
+• Support prioritaire dédié
+• Tarifs préférentiels 
+• Accès anticipé aux nouveautés
 
-Référence client: {}
-Date: {}
+Date limite: {}
 
 Cordialement,
 {}
 
 ---
-Pour vous désabonner, répondez avec 'STOP'
-            ", 
-            recipient_data.get("PRENOM").unwrap_or(&"Client".to_string()),
-            recipient_data.get("ENTREPRISE").unwrap_or(&"Votre Entreprise".to_string()),
-            recipient_data.get("VILLE").unwrap_or(&"votre ville".to_string()),
-            recipient_data.get("NOM").unwrap_or(&"REF-000".to_string()),
-            recipient_data.get("DATE").unwrap_or(&"16/09/2025".to_string()),
-            expediteur_personnalise
+Message destiné aux utilisateurs {}
+Pour vous désabonner: répondez 'STOP'
+            ",
+            domaine,
+            domaine,
+            domaine,
+            emails_groupe.len(),
+            domaine,
+            chrono::Utc::now().format("%d/%m/%Y"),
+            expediteur_adapte,
+            domaine
             );
             
-            // Construire email UNIQUE pour ce destinataire
-            let email_unique = Message::builder()
-                .from(format!("{} <{}>", expediteur_personnalise, smtp_config.email).parse()?)
-                .to(recipient_email.parse()?)
-                .subject(sujet_personnalise)
-                .body(corps_personnalise)?;
+            let email_groupe = message_builder.body(corps_groupe)?;
             
-            // Envoyer CET email spécifique
+            // Envoyer le BCC pour ce groupe
             let debut_envoi = std::time::Instant::now();
             
-            match mailer.send(&email_unique) {
+            match mailer.send(&email_groupe) {
                 Ok(_) => {
                     let duree = debut_envoi.elapsed();
-                    info!("   ✅ Envoyé à {} en {:.2}s", recipient_email, duree.as_secs_f32());
-                    emails_envoyes += 1;
+                    info!("   ✅ Groupe {} envoyé ({} emails BCC) en {:.2}s", 
+                          domaine, emails_groupe.len(), duree.as_secs_f32());
+                    total_envoyes += emails_groupe.len();
                 }
                 Err(e) => {
-                    error!("   ❌ Erreur pour {}: {}", recipient_email, e);
+                    error!("   ❌ Erreur groupe {}: {}", domaine, e);
                 }
             }
             
-            // Petite pause entre emails individuels (naturel)
-            if index < recipients.len() - 1 {
-                let pause_ms = rand::thread_rng().gen_range(500..2000); // 0.5-2 secondes
-                tokio::time::sleep(tokio::time::Duration::from_millis(pause_ms)).await;
-            }
+            // Pause entre groupes (naturel)
+            let pause_ms = rand::thread_rng().gen_range(1000..3000); // 1-3 secondes
+            tokio::time::sleep(tokio::time::Duration::from_millis(pause_ms)).await;
         }
         
-        let duree_totale = debut_total.elapsed();
-        info!("🎉 {} emails individualisés envoyés en {:.2}s", 
-              emails_envoyes, duree_totale.as_secs_f32());
+        info!("🎉 {} emails envoyés via BCC intelligent (groupés par domaine)", total_envoyes);
         
-        Ok(emails_envoyes)
+        Ok(total_envoyes)
     }
     
     fn extract_recipient_info(&self, email: &str) -> std::collections::HashMap<String, String> {
