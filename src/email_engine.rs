@@ -144,17 +144,136 @@ impl UltraEmailEngine {
         sender_template: &str,
         html_content: &str,
     ) -> Result<usize> {
-        // Simulation d'envoi pour le moment
-        info!("📤 Envoi de {} emails en BCC...", recipients.len());
+        use lettre::{Message, SmtpTransport, Transport, Address};
+        use lettre::transport::smtp::authentication::Credentials;
+        use lettre::message::Mailbox;
         
-        // Simuler le temps d'envoi
-        sleep(Duration::from_millis(2000)).await;
+        info!("📤 ENVOI RÉEL de {} emails en BCC...", recipients.len());
         
-        // Simuler quelques échecs aléatoires
-        let success_rate = 0.95;
-        let successful_sends = (recipients.len() as f64 * success_rate) as usize;
+        // Sélectionner un SMTP actif
+        let smtp_servers = self.config.get_active_smtp_servers();
+        if smtp_servers.is_empty() {
+            return Err(anyhow::anyhow!("Aucun serveur SMTP actif"));
+        }
         
-        Ok(successful_sends)
+        let smtp_config = &smtp_servers[0]; // Premier SMTP actif
+        info!("🔧 Utilisation SMTP: {} ({})", smtp_config.name, smtp_config.email);
+        
+        // Traiter les variables pour le premier destinataire (exemple)
+        let default_email = "test@example.com".to_string();
+        let first_recipient = recipients.get(0).unwrap_or(&default_email);
+        let recipient_data = self.extract_recipient_info(first_recipient);
+        
+        let sujet_final = self.process_variables(subject_template, &recipient_data);
+        let expediteur_final = self.process_variables(sender_template, &recipient_data);
+        
+        info!("📝 Sujet final: {}", sujet_final);
+        info!("👤 Expéditeur final: {}", expediteur_final);
+        
+        // Construire le message avec BCC
+        let mut message_builder = Message::builder()
+            .from(format!("{} <{}>", expediteur_final, smtp_config.email).parse()?)
+            .to(smtp_config.email.parse()?) // TO = expéditeur (obligatoire)
+            .subject(sujet_final);
+        
+        // Ajouter tous les destinataires en BCC
+        let mut emails_valides = 0;
+        for email in recipients {
+            match email.parse::<Mailbox>() {
+                Ok(mailbox) => {
+                    message_builder = message_builder.bcc(mailbox);
+                    emails_valides += 1;
+                }
+                Err(e) => {
+                    warn!("⚠️ Email invalide ignoré: {} ({})", email, e);
+                }
+            }
+        }
+        
+        if emails_valides == 0 {
+            return Err(anyhow::anyhow!("Aucun email valide dans le batch"));
+        }
+        
+        // Corps du message (HTML ou texte)
+        let corps_message = format!("
+Cher client,
+
+Après des années de collaboration, nous sommes heureux de vous présenter nos dernières innovations.
+
+Cette communication vous est adressée en tant que client privilégié.
+
+Cordialement,
+L'équipe
+
+---
+Pour vous désabonner, répondez avec 'STOP'
+        ");
+        
+        let email_final = message_builder.body(corps_message)?;
+        
+        // Créer la connexion SMTP
+        let creds = Credentials::new(smtp_config.username.clone(), smtp_config.password.clone());
+        
+        let mailer = if smtp_config.smtp_host.contains("gmail.com") {
+            // Configuration spéciale pour Gmail
+            SmtpTransport::starttls_relay(&smtp_config.smtp_host)?
+                .credentials(creds)
+                .port(smtp_config.smtp_port)
+                .timeout(Some(std::time::Duration::from_secs(30)))
+                .build()
+        } else {
+            // Configuration standard pour iCloud et autres
+            SmtpTransport::relay(&smtp_config.smtp_host)?
+                .credentials(creds)
+                .port(smtp_config.smtp_port)
+                .timeout(Some(std::time::Duration::from_secs(30)))
+                .build()
+        };
+        
+        // ENVOI RÉEL !
+        let debut = std::time::Instant::now();
+        
+        match mailer.send(&email_final) {
+            Ok(_) => {
+                let duree = debut.elapsed();
+                info!("✅ {} emails envoyés en BCC via {} en {:.2}s", 
+                      emails_valides, smtp_config.email, duree.as_secs_f32());
+                Ok(emails_valides)
+            }
+            Err(e) => {
+                error!("❌ Erreur SMTP lors de l'envoi: {}", e);
+                Err(anyhow::anyhow!("Erreur SMTP: {}", e))
+            }
+        }
+    }
+    
+    fn extract_recipient_info(&self, email: &str) -> std::collections::HashMap<String, String> {
+        let mut data = std::collections::HashMap::new();
+        
+        // Extraire le nom du local part de l'email
+        let local_part = email.split('@').next().unwrap_or("client");
+        let domaine = email.split('@').nth(1).unwrap_or("exemple.com");
+        
+        data.insert("NOM".to_string(), local_part.to_uppercase());
+        data.insert("PRENOM".to_string(), local_part.to_string());
+        data.insert("ENTREPRISE".to_string(), "Entreprise Client".to_string());
+        data.insert("VILLE".to_string(), "Paris".to_string());
+        data.insert("DATE".to_string(), chrono::Utc::now().format("%d/%m/%Y").to_string());
+        data.insert("HEURE".to_string(), chrono::Utc::now().format("%H:%M").to_string());
+        data.insert("DOMAINE_EMAIL".to_string(), domaine.to_string());
+        
+        data
+    }
+    
+    fn process_variables(&self, template: &str, data: &std::collections::HashMap<String, String>) -> String {
+        let mut result = template.to_string();
+        
+        for (variable, valeur) in data {
+            let pattern = format!("[{}]", variable);
+            result = result.replace(&pattern, valeur);
+        }
+        
+        result
     }
     
     fn get_default_html_template(&self) -> String {
