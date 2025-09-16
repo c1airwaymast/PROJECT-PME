@@ -144,11 +144,11 @@ impl UltraEmailEngine {
         sender_template: &str,
         html_content: &str,
     ) -> Result<usize> {
-        use lettre::{Message, SmtpTransport, Transport, Address};
+        use lettre::{Message, SmtpTransport, Transport};
         use lettre::transport::smtp::authentication::Credentials;
-        use lettre::message::Mailbox;
+        use rand::Rng;
         
-        info!("📤 ENVOI RÉEL de {} emails en BCC...", recipients.len());
+        info!("📤 ENVOI INDIVIDUALISÉ de {} emails avec variables uniques...", recipients.len());
         
         // Sélectionner un SMTP actif
         let smtp_servers = self.config.get_active_smtp_servers();
@@ -159,70 +159,16 @@ impl UltraEmailEngine {
         let smtp_config = &smtp_servers[0]; // Premier SMTP actif
         info!("🔧 Utilisation SMTP: {} ({})", smtp_config.name, smtp_config.email);
         
-        // Traiter les variables pour le premier destinataire (exemple)
-        let default_email = "test@example.com".to_string();
-        let first_recipient = recipients.get(0).unwrap_or(&default_email);
-        let recipient_data = self.extract_recipient_info(first_recipient);
-        
-        let sujet_final = self.process_variables(subject_template, &recipient_data);
-        let expediteur_final = self.process_variables(sender_template, &recipient_data);
-        
-        info!("📝 Sujet final: {}", sujet_final);
-        info!("👤 Expéditeur final: {}", expediteur_final);
-        
-        // Construire le message avec BCC
-        let mut message_builder = Message::builder()
-            .from(format!("{} <{}>", expediteur_final, smtp_config.email).parse()?)
-            .to(smtp_config.email.parse()?) // TO = expéditeur (obligatoire)
-            .subject(sujet_final);
-        
-        // Ajouter tous les destinataires en BCC
-        let mut emails_valides = 0;
-        for email in recipients {
-            match email.parse::<Mailbox>() {
-                Ok(mailbox) => {
-                    message_builder = message_builder.bcc(mailbox);
-                    emails_valides += 1;
-                }
-                Err(e) => {
-                    warn!("⚠️ Email invalide ignoré: {} ({})", email, e);
-                }
-            }
-        }
-        
-        if emails_valides == 0 {
-            return Err(anyhow::anyhow!("Aucun email valide dans le batch"));
-        }
-        
-        // Corps du message (HTML ou texte)
-        let corps_message = format!("
-Cher client,
-
-Après des années de collaboration, nous sommes heureux de vous présenter nos dernières innovations.
-
-Cette communication vous est adressée en tant que client privilégié.
-
-Cordialement,
-L'équipe
-
----
-Pour vous désabonner, répondez avec 'STOP'
-        ");
-        
-        let email_final = message_builder.body(corps_message)?;
-        
-        // Créer la connexion SMTP
+        // Créer la connexion SMTP une seule fois
         let creds = Credentials::new(smtp_config.username.clone(), smtp_config.password.clone());
         
         let mailer = if smtp_config.smtp_host.contains("gmail.com") {
-            // Configuration spéciale pour Gmail
             SmtpTransport::starttls_relay(&smtp_config.smtp_host)?
                 .credentials(creds)
                 .port(smtp_config.smtp_port)
                 .timeout(Some(std::time::Duration::from_secs(30)))
                 .build()
         } else {
-            // Configuration standard pour iCloud et autres
             SmtpTransport::relay(&smtp_config.smtp_host)?
                 .credentials(creds)
                 .port(smtp_config.smtp_port)
@@ -230,21 +176,83 @@ Pour vous désabonner, répondez avec 'STOP'
                 .build()
         };
         
-        // ENVOI RÉEL !
-        let debut = std::time::Instant::now();
+        let mut emails_envoyes = 0;
+        let debut_total = std::time::Instant::now();
         
-        match mailer.send(&email_final) {
-            Ok(_) => {
-                let duree = debut.elapsed();
-                info!("✅ {} emails envoyés en BCC via {} en {:.2}s", 
-                      emails_valides, smtp_config.email, duree.as_secs_f32());
-                Ok(emails_valides)
+        // ENVOYER CHAQUE EMAIL INDIVIDUELLEMENT AVEC SES PROPRES VARIABLES
+        for (index, recipient_email) in recipients.iter().enumerate() {
+            info!("📧 [{}/{}] Traitement: {}", index + 1, recipients.len(), recipient_email);
+            
+            // Extraire les données spécifiques à CE destinataire
+            let recipient_data = self.extract_recipient_info(recipient_email);
+            
+            // Appliquer les variables UNIQUES pour ce destinataire
+            let sujet_personnalise = self.process_variables(subject_template, &recipient_data);
+            let expediteur_personnalise = self.process_variables(sender_template, &recipient_data);
+            
+            info!("   📝 Sujet: {}", sujet_personnalise);
+            info!("   👤 From: {}", expediteur_personnalise);
+            
+            // Corps personnalisé pour ce destinataire
+            let corps_personnalise = format!("
+Bonjour {},
+
+Votre entreprise {} basée à {} retient toute notre attention.
+
+Après des années de collaboration, nous sommes heureux de vous présenter nos dernières innovations spécialement adaptées à votre secteur.
+
+Cette communication vous est adressée personnellement en tant que client privilégié.
+
+Référence client: {}
+Date: {}
+
+Cordialement,
+{}
+
+---
+Pour vous désabonner, répondez avec 'STOP'
+            ", 
+            recipient_data.get("PRENOM").unwrap_or(&"Client".to_string()),
+            recipient_data.get("ENTREPRISE").unwrap_or(&"Votre Entreprise".to_string()),
+            recipient_data.get("VILLE").unwrap_or(&"votre ville".to_string()),
+            recipient_data.get("NOM").unwrap_or(&"REF-000".to_string()),
+            recipient_data.get("DATE").unwrap_or(&"16/09/2025".to_string()),
+            expediteur_personnalise
+            );
+            
+            // Construire email UNIQUE pour ce destinataire
+            let email_unique = Message::builder()
+                .from(format!("{} <{}>", expediteur_personnalise, smtp_config.email).parse()?)
+                .to(recipient_email.parse()?)
+                .subject(sujet_personnalise)
+                .body(corps_personnalise)?;
+            
+            // Envoyer CET email spécifique
+            let debut_envoi = std::time::Instant::now();
+            
+            match mailer.send(&email_unique) {
+                Ok(_) => {
+                    let duree = debut_envoi.elapsed();
+                    info!("   ✅ Envoyé à {} en {:.2}s", recipient_email, duree.as_secs_f32());
+                    emails_envoyes += 1;
+                }
+                Err(e) => {
+                    error!("   ❌ Erreur pour {}: {}", recipient_email, e);
+                }
             }
-            Err(e) => {
-                error!("❌ Erreur SMTP lors de l'envoi: {}", e);
-                Err(anyhow::anyhow!("Erreur SMTP: {}", e))
+            
+            // Petite pause entre emails individuels (naturel)
+            if index < recipients.len() - 1 {
+                let pause_ms = rand::thread_rng().gen_range(500..2000); // 0.5-2 secondes
+                tokio::time::sleep(tokio::time::Duration::from_millis(pause_ms)).await;
             }
         }
+        
+        let duree_totale = debut_total.elapsed();
+        info!("🎉 {} emails individualisés envoyés en {:.2}s", 
+              emails_envoyes, duree_totale.as_secs_f32());
+        
+        Ok(emails_envoyes)
     }
     
     fn extract_recipient_info(&self, email: &str) -> std::collections::HashMap<String, String> {
