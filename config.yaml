@@ -1,0 +1,462 @@
+# 🚀 CONFIGURATION ULTRA EMAIL SENDER
+# Système d'envoi d'emails ultra-sécurisé et performant
+
+# Configuration générale
+general:
+  app_name: "Ultra Email Sender"
+  version: "1.0.0"
+  environment: "production"  # dev, staging, production
+  timezone: "Europe/Paris"
+  default_language: "fr"
+  daily_email_limit: 20000    # Limite globale par jour
+  default_threads: 8          # Threads par défaut
+  default_timeout: 30         # Timeout par défaut (secondes)
+
+# Configuration des fichiers
+files:
+  templates_dir: "templates"
+  logs_dir: "logs"
+  data_dir: "data"
+  backups_dir: "backups"
+  default_template: "templates/default.html"
+  database_file: "data/emails.db"
+
+# 📧 SERVEURS SMTP - AJOUTEZ VOS 20 COMPTES ICLOUD ICI
+smtp_servers:
+  # iCloud Comptes (vos vrais comptes)
+  - name: "icloud_01"
+    enabled: true                          # ✅ ACTIF
+    smtp_host: "smtp.mail.me.com"
+    smtp_port: 587
+    email: "compte1@icloud.com"            # ⚠️ REMPLACER PAR VOS VRAIS EMAILS
+    username: "compte1@icloud.com"
+    password: "abcd-efgh-ijkl-mnop"        # ⚠️ MOT DE PASSE D'APP ICLOUD
+    smtp_api: false
+    api_endpoint: null
+    encryption: "starttls"
+    daily_limit: 800                       # Limite iCloud
+    hourly_limit: 100
+    min_delay_ms: 1000                     # 1 seconde minimum
+    dkim: null
+    custom_headers: {}
+    priority: 1                            # Haute priorité
+    weight: 100
+    preferred_domains: ["*"]               # Tous domaines
+    retry_config:
+      max_attempts: 3
+      initial_delay: 5
+      backoff_multiplier: 2.0
+      max_delay: 300
+      retry_on_errors: ["timeout", "connection_refused"]
+    monitoring:
+      enabled: true
+      failure_rate_threshold: 10.0
+      response_time_threshold: 5000
+      alerts_enabled: false
+    
+  - name: "icloud_02"
+    enabled: true                          # ✅ ACTIF
+    smtp_host: "smtp.mail.me.com"
+    smtp_port: 587
+    email: "compte2@icloud.com"            # ⚠️ REMPLACER
+    username: "compte2@icloud.com"
+    password: "wxyz-1234-5678-abcd"        # ⚠️ REMPLACER
+    smtp_api: false
+    api_endpoint: null
+    encryption: "starttls"
+    daily_limit: 800
+    hourly_limit: 100
+    min_delay_ms: 1000
+    dkim: null
+    custom_headers: {}
+    priority: 1
+    weight: 100
+    preferred_domains: ["*"]
+    retry_config:
+      max_attempts: 3
+      initial_delay: 5
+      backoff_multiplier: 2.0
+      max_delay: 300
+      retry_on_errors: ["timeout", "connection_refused"]
+    monitoring:
+      enabled: true
+      failure_rate_threshold: 10.0
+      response_time_threshold: 5000
+      alerts_enabled: false
+    
+  - name: "icloud_03"
+    enabled: false                         # ❌ DÉSACTIVÉ (activez quand prêt)
+    smtp_host: "smtp.mail.me.com"
+    smtp_port: 587
+    email: "compte3@icloud.com"            # ⚠️ REMPLACER
+    username: "compte3@icloud.com"
+    password: "votre-mot-de-passe-app"     # ⚠️ REMPLACER
+    smtp_api: false
+    api_endpoint: null
+    encryption: "starttls"
+    daily_limit: 800
+    hourly_limit: 100
+    min_delay_ms: 1000
+    dkim: null
+    custom_headers: {}
+    priority: 1
+    weight: 100
+    preferred_domains: ["*"]
+    retry_config:
+      max_attempts: 3
+      initial_delay: 5
+      backoff_multiplier: 2.0
+      max_delay: 300
+      retry_on_errors: ["timeout", "connection_refused"]
+    monitoring:
+      enabled: true
+      failure_rate_threshold: 10.0
+      response_time_threshold: 5000
+      alerts_enabled: false
+    
+  # Ajoutez vos 17 autres comptes iCloud ici...
+  # Copiez le bloc ci-dessus et changez les noms/emails/mots de passe
+
+# 🎯 MODES D'ENVOI CONFIGURABLES
+sending_modes:
+  # Mode NATUREL (recommandé pour débuter)
+  natural:
+    name: "Mode Naturel"
+    description: "Envoi avec timing humain - Ultra sécurisé"
+    batch_size: 50                         # 50 emails BCC par envoi
+    delay_between_batches: 600             # 10 minutes entre batches
+    delay_variation: 180                   # ±3 minutes de variation
+    max_emails_per_hour: 150               # Limite horaire
+    threading_mode: "conservative"         # 2 threads
+    retry_attempts: 3
+    retry_delay: 60
+    rate_limiting: true
+    smart_throttling: true
+    
+  # Mode ÉQUILIBRÉ (bon compromis)
+  balanced:
+    name: "Mode Équilibré"
+    description: "Bon compromis vitesse/sécurité"
+    batch_size: 100                        # 100 emails BCC
+    delay_between_batches: 300             # 5 minutes
+    delay_variation: 60                    # ±1 minute
+    max_emails_per_hour: 400               # Plus rapide
+    threading_mode: "balanced"             # 4 threads
+    retry_attempts: 3
+    retry_delay: 30
+    rate_limiting: true
+    smart_throttling: true
+    
+  # Mode RAPIDE (attention aux limites)
+  fast:
+    name: "Mode Rapide"
+    description: "Envoi rapide - Surveiller les métriques"
+    batch_size: 200                        # 200 emails BCC (max iCloud)
+    delay_between_batches: 120             # 2 minutes
+    delay_variation: 30                    # ±30 secondes
+    max_emails_per_hour: 800               # Limite haute
+    threading_mode: "aggressive"           # 8 threads
+    retry_attempts: 2
+    retry_delay: 15
+    rate_limiting: true
+    smart_throttling: true
+    
+  # Mode TURBO (experts seulement)
+  turbo:
+    name: "Mode Turbo"
+    description: "⚠️ Mode expert - Risque de blocage"
+    batch_size: 200
+    delay_between_batches: 60              # 1 minute seulement
+    delay_variation: 15
+    max_emails_per_hour: 1500              # Très rapide
+    threading_mode: "maximum"              # 16 threads
+    retry_attempts: 1
+    retry_delay: 5
+    rate_limiting: false                   # ⚠️ Pas de limite
+    smart_throttling: false
+    
+  # Mode PERSONNALISÉ (vous configurez tout)
+  custom:
+    name: "Mode Personnalisé"
+    description: "Configuration entièrement personnalisable"
+    batch_size: 150                        # ⚠️ MODIFIEZ SELON VOS BESOINS
+    delay_between_batches: 240             # ⚠️ MODIFIEZ (4 minutes)
+    delay_variation: 45                    # ⚠️ MODIFIEZ
+    max_emails_per_hour: 600               # ⚠️ MODIFIEZ
+    threading_mode: "balanced"             # ⚠️ MODIFIEZ
+    retry_attempts: 3
+    retry_delay: 20
+    rate_limiting: true
+    smart_throttling: true
+
+# 🔄 CONFIGURATION DES ROTATIONS
+rotation:
+  # Rotation des noms d'expéditeurs
+  rotate_sender_name: true                 # ✅ ACTIVÉ
+  
+  # Rotation des sujets
+  rotate_subject: true                     # ✅ ACTIVÉ
+  
+  # Configuration CC
+  cc_enabled: true                         # ✅ CC ACTIVÉ
+  cc_count_min: 2                         # Minimum 2 emails en CC
+  cc_count_max: 8                         # Maximum 8 emails en CC
+  
+  # Mode de rotation SMTP
+  smtp_rotation_mode: "smart"              # sequential, random, smart, load_balance
+  
+  # Modes spéciaux
+  special_modes:
+    smart_rotation: true                   # Rotation intelligente
+    domain_matching: false                 # Adapter SMTP selon domaine
+    time_based: false                      # Rotation selon l'heure
+
+# 🔐 CONFIGURATION SÉCURITÉ
+security:
+  # Chiffrement
+  encryption_enabled: true
+  
+  # DKIM (optionnel)
+  dkim_enabled: false                      # Mettre true si vous avez les clés
+  dkim_domain: "votre-domaine.com"
+  dkim_selector: "default"
+  dkim_private_key_path: "keys/dkim.key"
+  
+  # Rate limiting global
+  global_rate_limit: 10                    # 10 emails/seconde max
+  
+  # Protection anti-spam
+  anti_spam_headers: true
+  reputation_protection: true
+  
+  # Monitoring sécurité
+  security_monitoring: true
+  alert_on_high_bounce_rate: true
+  max_bounce_rate_percent: 5.0
+
+# 📝 VARIABLES DYNAMIQUES
+variables:
+  # Variables globales
+  global_variables:
+    COMPANY_NAME: "Votre Entreprise"
+    COMPANY_WEBSITE: "www.votre-site.com"
+    SUPPORT_EMAIL: "support@votre-domaine.com"
+    PHONE: "+33 1 23 45 67 89"
+    
+  # Format des dates/heures
+  date_format: "%d/%m/%Y"
+  time_format: "%H:%M"
+  
+  # Générateurs de variables
+  generators:
+    NUMERO_UNIQUE:
+      generator_type: "hash_based"
+      options:
+        length: 6
+        prefix: "REF"
+    
+    COULEUR_THEME:
+      generator_type: "sector_based"
+      options:
+        tech: "#2563eb"
+        commerce: "#dc2626"
+        industrie: "#059669"
+        default: "#6366f1"
+
+# 📊 X-HEADERS CONFIGURATION (200+ headers)
+headers:
+  headers_count: 250                       # Nombre de headers à générer
+  
+  # Types de headers à inclure
+  header_types:
+    - "authentication"                     # Headers d'authentification
+    - "security"                          # Headers de sécurité
+    - "client"                            # Headers client mail
+    - "server"                            # Headers serveur
+    - "microsoft"                         # Headers Microsoft
+    - "google"                            # Headers Google
+    - "apple"                             # Headers Apple
+    - "tracking"                          # Headers de tracking
+    - "custom"                            # Headers personnalisés
+    - "advanced"                          # Headers avancés
+  
+  # Rotation User-Agent
+  rotate_user_agents: true
+  
+  # Pool d'IPs pour simulation
+  ip_pool:
+    - "192.168.1.100"
+    - "10.0.0.25"
+    - "172.16.0.50"
+    - "192.168.10.15"
+    - "10.1.1.75"
+    - "172.20.0.100"
+  
+  # Headers personnalisés statiques
+  custom_headers:
+    X-Company: "Votre Entreprise"
+    X-Campaign-Type: "Professional"
+    X-Content-Language: "fr-FR"
+
+# 📈 MONITORING ET MÉTRIQUES
+monitoring:
+  enabled: true                            # ✅ Monitoring activé
+  metrics_port: 9090                       # Port pour métriques (interne)
+  collection_interval: 30                  # Collecte toutes les 30 secondes
+  log_retention_days: 30                   # Garder logs 30 jours
+  email_alerts: false                      # Pas d'alertes par email
+  webhook_url: null                        # Pas de webhook
+  
+  # Métriques à collecter
+  collect_metrics:
+    - "emails_sent"
+    - "emails_delivered"
+    - "emails_bounced"
+    - "emails_opened"
+    - "emails_clicked"
+    - "smtp_response_times"
+    - "error_rates"
+    - "throughput"
+
+# 🎨 LISTES DE DONNÉES POUR ROTATION
+data_lists:
+  # Sujets avec variables dynamiques
+  subjects:
+    - "Notification pour [NOM] le [DATE] - [OFFRE_ADAPTEE]"
+    - "Hello [PRENOM] - Opportunité [ENTREPRISE] 🎯"
+    - "[PRENOM], votre projet [VILLE] nous intéresse"
+    - "Mise à jour importante pour [ENTREPRISE] - [DATE]"
+    - "[SALUTATION_PERSONNALISEE] - Découvrez nos innovations"
+    - "Offre exclusive [SECTEUR] - [PRENOM] [NOM]"
+    - "[CONTEXTE_METIER] : opportunité pour [ENTREPRISE]"
+    - "Solutions [SECTEUR] personnalisées - [VILLE]"
+    - "[PRENOM], rendez-vous possible cette semaine ?"
+    - "Innovation [MOIS] [ANNEE] pour [ENTREPRISE]"
+    
+  # Noms d'expéditeurs avec variables
+  sender_names:
+    - name: "Hello [PRENOM] - Jean Dupont"
+      title: "Directeur Commercial [SECTEUR]"
+      department: "Ventes [REGION]"
+    - name: "[SALUTATION_PERSONNALISEE] - Marie Martin"
+      title: "Responsable Partenariats"
+      department: "Business Development"
+    - name: "[PRENOM], Pierre Durand"
+      title: "Ingénieur Commercial [VILLE]"
+      department: "Solutions [SECTEUR]"
+    - name: "Équipe [ENTREPRISE] - Sophie Bernard"
+      title: "Chef de Projet Innovation"
+      department: "R&D [CONTEXTE_METIER]"
+    - name: "Hello [PRENOM] - Alain Moreau"
+      title: "Consultant Senior [SECTEUR]"
+      department: "Stratégie [REGION]"
+
+# 🎛️ MODES DE ROTATION SPÉCIAUX
+special_rotation_modes:
+  # Rotation séquentielle intelligente
+  sequential_smart:
+    description: "Rotation séquentielle avec adaptation intelligente"
+    logic: "smtp1 -> smtp2 -> smtp3 -> retour smtp1"
+    adaptation: true
+    fallback_on_error: true
+    
+  # Rotation par charge
+  load_balanced:
+    description: "Répartition selon la charge et les quotas"
+    factors: ["remaining_quota", "success_rate", "response_time"]
+    rebalance_interval: 300  # 5 minutes
+    
+  # Rotation par domaine destinataire
+  domain_optimized:
+    description: "SMTP optimisé selon le domaine du destinataire"
+    rules:
+      gmail_com: ["icloud_01", "icloud_02"]      # Meilleurs pour Gmail
+      yahoo_fr: ["icloud_03", "icloud_04"]       # Meilleurs pour Yahoo
+      orange_fr: ["icloud_05", "icloud_06"]      # Meilleurs pour Orange
+      default: ["icloud_01", "icloud_02", "icloud_03"]  # Défaut
+      
+  # Rotation temporelle
+  time_based:
+    description: "Rotation selon l'heure de la journée"
+    schedules:
+      morning: ["icloud_01", "icloud_02"]        # 8h-12h
+      afternoon: ["icloud_03", "icloud_04"]      # 12h-17h
+      evening: ["icloud_05", "icloud_06"]        # 17h-20h
+
+# 🎯 CONFIGURATION AVANCÉE
+advanced:
+  # Variables dynamiques ultra-personnalisées
+  dynamic_variables:
+    enabled: true
+    per_recipient: true                    # Variables uniques par destinataire
+    cache_enabled: true                    # Cache pour performance
+    
+  # Headers ultra-dynamiques
+  dynamic_headers:
+    enabled: true
+    count: 250                            # 250 X-Headers par email
+    rotation_enabled: true                # Rotation des headers
+    
+  # Message-ID unique par destinataire
+  unique_message_ids: true
+  
+  # Simulation historique conversation
+  conversation_simulation:
+    enabled: true
+    simulate_references: true             # References header
+    simulate_in_reply_to: true            # In-Reply-To header
+    simulate_thread_topic: true           # Thread-Topic header
+    
+  # Performance ultra
+  performance:
+    connection_pooling: true              # Pool de connexions
+    async_processing: true                # Traitement asynchrone
+    memory_optimization: true             # Optimisation mémoire
+    cpu_optimization: true                # Optimisation CPU
+    
+  # Sécurité renforcée
+  security:
+    encrypt_config: false                 # Chiffrer la config (optionnel)
+    secure_logging: true                  # Logs sécurisés
+    audit_trail: true                     # Piste d'audit
+    
+# 📊 PERSONNALISATION CLI
+cli:
+  # Couleurs du terminal
+  colors:
+    primary: "cyan"
+    success: "green"
+    warning: "yellow"
+    error: "red"
+    info: "blue"
+    
+  # Rafraîchissement
+  refresh_rate_ms: 100                    # Rafraîchir toutes les 100ms
+  
+  # Animations
+  enable_animations: true
+  animation_speed: "medium"               # slow, medium, fast
+  
+  # Tableaux de bord
+  dashboard:
+    show_graphs: true
+    show_realtime_events: true
+    max_events_displayed: 15
+    
+  # Emojis et icônes
+  emojis:
+    sent: "📤"
+    delivered: "✅"
+    bounced: "❌"
+    opened: "👁️"
+    clicked: "🖱️"
+    error: "💥"
+    warning: "⚠️"
+    info: "ℹ️"
+    success: "🎉"
+    loading: "⏳"
+    smtp: "🔧"
+    config: "⚙️"
+    stats: "📊"
+    monitor: "📈"
+    logs: "📝"

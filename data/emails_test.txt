@@ -1,0 +1,5 @@
+jean.dupont@techcorp.com
+marie.martin@commerce.fr
+pierre.durand@industrie.com
+sophie.bernard@services.fr
+alain.moreau@startup.io
