@@ -247,18 +247,18 @@ impl UltraEmailEngine {
                 }
             }
             
-            // Corps personnalisé pour ce groupe de domaine (UTF-8 correct)
+            // Corps personnalisé pour ce groupe de domaine (UTF-8 explicite)
             let corps_groupe = format!(
 "Chers partenaires {},
 
-Nous nous adressons specialement aux utilisateurs {} pour vous presenter nos dernieres innovations.
+Nous nous adressons spécialement aux utilisateurs {} pour vous présenter nos dernières innovations.
 
-Cette offre exclusive est reservee a notre communaute {} ({} destinataires selectionnes).
+Cette offre exclusive est réservée à notre communauté {} ({} destinataires sélectionnés).
 
-🎯 Avantages speciaux pour {} :
-• Support prioritaire dedie
-• Tarifs preferentiels 
-• Acces anticipe aux nouveautes
+🎯 Avantages spéciaux pour {} :
+• Support prioritaire dédié
+• Tarifs préférentiels 
+• Accès anticipé aux nouveautés
 
 Date limite: {}
 
@@ -266,8 +266,8 @@ Cordialement,
 {}
 
 ---
-Message destine aux utilisateurs {}
-Pour vous desabonner: repondez 'STOP'",
+Message destiné aux utilisateurs {}
+Pour vous désabonner: répondez 'STOP'",
             domaine,
             domaine,
             domaine,
