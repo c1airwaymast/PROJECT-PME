@@ -421,7 +421,8 @@ Pour vous désabonner: répondez 'STOP'",
         data.insert("EMAIL".to_string(), email.to_string());
         
         // Variables avancées pour CC
-        data.insert("NOM COMPANY".to_string(), format!("{}-company", nom_formate.to_lowercase()));
+        let company_name = domaine.split('.').next().unwrap_or("company").to_string();
+        data.insert("NOM COMPANY".to_string(), company_name);
         data.insert("ENTREPRISE".to_string(), format!("{} Corp", nom_formate));
         data.insert("VILLE".to_string(), "Paris".to_string());
         data.insert("DATE".to_string(), chrono::Utc::now().format("%d/%m/%Y").to_string());
