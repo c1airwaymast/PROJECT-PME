@@ -214,10 +214,17 @@ impl UltraEmailEngine {
             info!("   📝 Sujet groupe: {}", sujet_adapte);
             info!("   👤 From groupe: {}", expediteur_adapte);
             
-            // Construire le message BCC pour ce groupe
+            // Construire le message BCC pour ce groupe avec headers anti-spam
+            let message_id = format!("<{}.{}@{}>", 
+                uuid::Uuid::new_v4().simple(), 
+                chrono::Utc::now().timestamp(),
+                smtp_config.smtp_host.replace("smtp.", ""));
+                
             let mut message_builder = Message::builder()
+                .message_id(Some(message_id))
                 .from(format!("{} <{}>", expediteur_adapte, smtp_config.email).parse()?)
                 .to(smtp_config.email.parse()?) // TO = expéditeur
+                .reply_to(smtp_config.email.parse()?)
                 .subject(sujet_adapte);
             
             // Ajouter emails CC si activé
@@ -338,33 +345,8 @@ Pour vous désabonner: répondez 'STOP'",
             chrono::Utc::now().format("%d/%m/%Y"), expediteur_adapte, domaine
             );
             
-            // Texte alternatif
-            let texte_alternatif = format!("Chers partenaires {},
-
-Nous nous adressons spécialement aux utilisateurs {} pour vous présenter nos dernières innovations.
-
-Cette offre exclusive est réservée à notre communauté {} ({} destinataires sélectionnés).
-
-🎯 Avantages spéciaux pour {} :
-- Support prioritaire dédié
-- Tarifs préférentiels 
-- Accès anticipé aux nouveautés
-
-👆 CLIQUEZ ICI pour découvrir l'offre complète :
-https://www.example.com/offre-speciale?domain={}&ref={}
-
-Date limite: {}
-
-Cordialement,
-{}
-
----
-Message destiné aux utilisateurs {}
-Pour vous désabonner: répondez 'STOP'",
-            domaine, domaine, domaine, emails_groupe.len(), domaine,
-            domaine, chrono::Utc::now().format("%Y%m%d"),
-            chrono::Utc::now().format("%d/%m/%Y"), expediteur_adapte, domaine
-            );
+            // Contenu ultra-varié anti-détection
+            let texte_alternatif = self.generer_contenu_anti_spam(&domaine, &expediteur_adapte, emails_groupe.len());
             
             // Créer email multipart (HTML + texte)
             let email_groupe = message_builder

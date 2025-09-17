@@ -150,14 +150,14 @@ smtp_servers:
 
 # 🎯 MODES D'ENVOI CONFIGURABLES
 sending_modes:
-  # Mode NATUREL (recommandé pour débuter)
+  # Mode NATUREL ANTI-SPAM (timing humain réaliste)
   natural:
-    name: "Mode Naturel"
-    description: "Envoi avec timing humain - Ultra sécurisé"
-    batch_size: 50                         # 50 emails BCC par envoi
-    delay_between_batches: 600             # 10 minutes entre batches
-    delay_variation: 180                   # ±3 minutes de variation
-    max_emails_per_hour: 150               # Limite horaire
+    name: "Mode Naturel Anti-Spam"
+    description: "Timing ultra-humain pour garantir inbox"
+    batch_size: 25                         # 25 emails BCC par envoi (plus naturel)
+    delay_between_batches: 1800            # 30 minutes entre batches (très humain)
+    delay_variation: 600                   # ±10 minutes de variation
+    max_emails_per_hour: 60                # Limite très conservative
     threading_mode: "conservative"         # 2 threads
     retry_attempts: 3
     retry_delay: 60
