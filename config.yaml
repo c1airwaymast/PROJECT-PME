@@ -230,8 +230,8 @@ rotation:
   
   # Configuration CC avec variables dynamiques
   cc_enabled: true                         # ✅ CC ACTIVÉ
-  cc_count_min: 1                         # Minimum 1 email en CC
-  cc_count_max: 3                         # Maximum 3 emails en CC
+  cc_count_min: 1                         # EXACTEMENT 1 email en CC
+  cc_count_max: 1                         # MAXIMUM 1 email en CC
   cc_rotation_auto: true                   # ✅ Rotation automatique CC
   
   # Liste d'emails CC avec variables dynamiques PARTOUT
