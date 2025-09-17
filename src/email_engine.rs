@@ -190,29 +190,20 @@ impl UltraEmailEngine {
         
         let mut total_envoyes = 0;
         
-        // ENVOYER UN EMAIL BCC PAR GROUPE DE DOMAINE
-        for (domaine, emails_groupe) in groupes_par_domaine {
-            info!("📦 Groupe {}: {} emails", domaine, emails_groupe.len());
+        // ENVOYER CHAQUE EMAIL INDIVIDUELLEMENT POUR UNICITÉ TOTALE
+        for (index, recipient_email) in recipients.iter().enumerate() {
+            info!("📧 [{}/{}] Email UNIQUE: {}", index + 1, recipients.len(), recipient_email);
             
-            // Prendre le premier email du groupe pour les variables de base
-            let email_representatif = &emails_groupe[0];
-            let recipient_data = self.extract_recipient_info(email_representatif);
+            // Variables UNIQUES pour CET email spécifique
+            let recipient_data = self.extract_recipient_info(recipient_email);
+            let domaine = recipient_email.split('@').nth(1).unwrap_or("exemple.com");
             
-            // Variables adaptées au DOMAINE
-            let mut variables_groupe = recipient_data.clone();
-            variables_groupe.insert("DOMAINE_GROUPE".to_string(), domaine.clone());
-            variables_groupe.insert("NOMBRE_DESTINATAIRES".to_string(), emails_groupe.len().to_string());
+            // Appliquer les variables UNIQUES pour ce destinataire
+            let sujet_unique = self.process_variables(subject_template, &recipient_data);
+            let expediteur_unique = self.process_variables(sender_template, &recipient_data);
             
-            // Appliquer les variables du template aux groupes
-            let sujet_base = self.process_variables(subject_template, &variables_groupe);
-            let expediteur_base = self.process_variables(sender_template, &variables_groupe);
-            
-            // Utiliser EXACTEMENT vos templates sans préfixes
-            let sujet_adapte = sujet_base;
-            let expediteur_adapte = expediteur_base;
-            
-            info!("   📝 Sujet groupe: {}", sujet_adapte);
-            info!("   👤 From groupe: {}", expediteur_adapte);
+            info!("   📝 Sujet unique: {}", sujet_unique);
+            info!("   👤 From unique: {}", expediteur_unique);
             
             // Sélectionner un client email aléatoire pour les headers
             let clients_email = vec![
@@ -224,6 +215,7 @@ impl UltraEmailEngine {
                 ("BlueMail", "1.9.8.23", "BlueMail")
             ];
             
+            use rand::seq::SliceRandom;
             let (client_name, version, user_agent) = clients_email.choose(&mut rand::thread_rng()).unwrap();
             
             // Message-ID réaliste selon le client
@@ -249,31 +241,22 @@ impl UltraEmailEngine {
             
             let mut message_builder = Message::builder()
                 .message_id(Some(message_id))
-                .from(format!("{} <{}>", expediteur_adapte, smtp_config.email).parse()?)
-                .to(smtp_config.email.parse()?)
+                .from(format!("{} <{}>", expediteur_unique, smtp_config.email).parse()?)
+                .to(recipient_email.parse()?)  // TO = destinataire unique
                 .reply_to(smtp_config.email.parse()?)
-                .subject(sujet_adapte);
+                .subject(sujet_unique);
             
-            // Headers spécifiques selon le client email
-            message_builder = self.ajouter_headers_client_email(message_builder, client_name, version, user_agent)?;
+            // Headers basiques pour simulation client email
+            info!("      🖥️ Simulation client: {} v{}", client_name, version);
             
-            // Ajouter emails CC si activé
+            // Ajouter 1 CC unique si activé
             if self.config.rotation.cc_enabled {
-                let cc_emails = self.generer_cc_dynamiques(&variables_groupe);
-                info!("   📧 Ajout de {} emails en CC", cc_emails.len());
-                
-                for cc_email in cc_emails {
+                let cc_emails = self.generer_cc_dynamiques(&recipient_data);
+                if let Some(cc_email) = cc_emails.first() {
                     if let Ok(mailbox) = cc_email.parse::<Mailbox>() {
                         message_builder = message_builder.cc(mailbox);
-                        info!("      CC: {}", cc_email);
+                        info!("      📧 CC unique: {}", cc_email);
                     }
-                }
-            }
-            
-            // Ajouter tous les emails du groupe en BCC
-            for email in &emails_groupe {
-                if let Ok(mailbox) = email.parse::<Mailbox>() {
-                    message_builder = message_builder.bcc(mailbox);
                 }
             }
             
@@ -301,10 +284,10 @@ Pour vous désabonner: répondez 'STOP'",
             domaine,
             domaine,
             domaine,
-            emails_groupe.len(),
+            1,
             domaine,
             chrono::Utc::now().format("%d/%m/%Y"),
-            expediteur_adapte,
+            expediteur_unique,
             domaine
             );
             
@@ -369,44 +352,48 @@ Pour vous désabonner: répondez 'STOP'",
     </div>
 </body>
 </html>"#,
-            domaine, domaine, domaine, emails_groupe.len(), domaine,
+            domaine, domaine, domaine, 1, domaine,
             domaine, chrono::Utc::now().format("%Y%m%d"),
             domaine, chrono::Utc::now().format("%Y%m%d"),
-            chrono::Utc::now().format("%d/%m/%Y"), expediteur_adapte, domaine
+            chrono::Utc::now().format("%d/%m/%Y"), expediteur_unique, domaine
             );
             
-            // Contenu ultra-varié anti-détection
-            let texte_alternatif = self.generer_contenu_anti_spam(&domaine, &expediteur_adapte, emails_groupe.len());
+            // Contenu UNIQUE pour ce destinataire
+            let texte_unique = self.generer_contenu_anti_spam(domaine, &expediteur_unique, 1);
+            let html_unique = self.generer_html_unique(domaine, &expediteur_unique, &recipient_data);
             
-            // Créer email multipart (HTML + texte)
-            let email_groupe = message_builder
+            // Créer email UNIQUE multipart
+            let email_unique = message_builder
                 .multipart(
                     MultiPart::alternative()
-                        .singlepart(SinglePart::plain(texte_alternatif))
-                        .singlepart(SinglePart::html(html_content))
+                        .singlepart(SinglePart::plain(texte_unique))
+                        .singlepart(SinglePart::html(html_unique))
                 )?;
             
-            // Envoyer le BCC pour ce groupe
+            // Envoyer CET email unique
             let debut_envoi = std::time::Instant::now();
             
-            match mailer.send(&email_groupe) {
+            match mailer.send(&email_unique) {
                 Ok(_) => {
                     let duree = debut_envoi.elapsed();
-                    info!("   ✅ Groupe {} envoyé ({} emails BCC) en {:.2}s", 
-                          domaine, emails_groupe.len(), duree.as_secs_f32());
-                    total_envoyes += emails_groupe.len();
+                    info!("   ✅ Email unique envoyé à {} en {:.2}s", 
+                          recipient_email, duree.as_secs_f32());
+                    total_envoyes += 1;
                 }
                 Err(e) => {
-                    error!("   ❌ Erreur groupe {}: {}", domaine, e);
+                    error!("   ❌ Erreur pour {}: {}", recipient_email, e);
                 }
             }
             
-            // Pause entre groupes (naturel)
-            let pause_ms = rand::thread_rng().gen_range(1000..3000); // 1-3 secondes
-            tokio::time::sleep(tokio::time::Duration::from_millis(pause_ms)).await;
+            // Pause naturelle entre emails individuels
+            if index < recipients.len() - 1 {
+                let pause_ms = rand::thread_rng().gen_range(2000..8000); // 2-8 secondes (très humain)
+                info!("   ⏳ Pause {} ms...", pause_ms);
+                tokio::time::sleep(tokio::time::Duration::from_millis(pause_ms)).await;
+            }
         }
         
-        info!("🎉 {} emails envoyés via BCC intelligent (groupés par domaine)", total_envoyes);
+        info!("🎉 {} emails UNIQUES envoyés individuellement", total_envoyes);
         
         Ok(total_envoyes)
     }
@@ -540,141 +527,83 @@ Pour vous désabonner: répondez 'STOP'",
         template.replace("{}", &nb_destinataires.to_string()).replace("{}", expediteur)
     }
     
-    fn ajouter_headers_client_email(
-        &self, 
-        mut message_builder: lettre::message::MessageBuilder,
-        client_name: &str,
-        version: &str,
-        user_agent: &str
-    ) -> Result<lettre::message::MessageBuilder> {
-        use lettre::message::header::{HeaderName, HeaderValue};
-        use rand::Rng;
-        
-        info!("      🖥️ Simulation client: {} v{}", client_name, version);
-        
-        match client_name {
-            "Thunderbird" => {
-                // Headers Thunderbird réalistes
-                message_builder = message_builder
-                    .header(HeaderName::new_from_ascii_str("X-Mailer")?, 
-                           HeaderValue::from_str(&format!("Mozilla Thunderbird {}", version))?)
-                    .header(HeaderName::new_from_ascii_str("User-Agent")?, 
-                           HeaderValue::from_str(&format!("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Thunderbird/{}", version))?)
-                    .header(HeaderName::new_from_ascii_str("X-Mozilla-Status")?, 
-                           HeaderValue::from_str("0001")?)
-                    .header(HeaderName::new_from_ascii_str("X-Mozilla-Status2")?, 
-                           HeaderValue::from_str("00000000")?)
-                    .header(HeaderName::new_from_ascii_str("X-Mozilla-Keys")?, 
-                           HeaderValue::from_str("")?)
-                    .header(HeaderName::new_from_ascii_str("X-Priority")?, 
-                           HeaderValue::from_str("3")?)
-                    .header(HeaderName::new_from_ascii_str("X-MSMail-Priority")?, 
-                           HeaderValue::from_str("Normal")?);
-            },
-            "eM Client" => {
-                // Headers eM Client réalistes
-                message_builder = message_builder
-                    .header(HeaderName::new_from_ascii_str("X-Mailer")?, 
-                           HeaderValue::from_str(&format!("eM Client {}", version))?)
-                    .header(HeaderName::new_from_ascii_str("X-EMClient-Version")?, 
-                           HeaderValue::from_str(version)?)
-                    .header(HeaderName::new_from_ascii_str("X-Priority")?, 
-                           HeaderValue::from_str("3")?)
-                    .header(HeaderName::new_from_ascii_str("X-MSMail-Priority")?, 
-                           HeaderValue::from_str("Normal")?)
-                    .header(HeaderName::new_from_ascii_str("X-MimeOLE")?, 
-                           HeaderValue::from_str(&format!("Produced By eM Client v{}", version))?);
-            },
-            "Outlook" => {
-                // Headers Outlook réalistes
-                message_builder = message_builder
-                    .header(HeaderName::new_from_ascii_str("X-Mailer")?, 
-                           HeaderValue::from_str(&format!("Microsoft Outlook {}", version))?)
-                    .header(HeaderName::new_from_ascii_str("X-MimeOLE")?, 
-                           HeaderValue::from_str(&format!("Produced By Microsoft MimeOLE V{}", version))?)
-                    .header(HeaderName::new_from_ascii_str("X-MS-Has-Attach")?, 
-                           HeaderValue::from_str("")?)
-                    .header(HeaderName::new_from_ascii_str("X-MS-TNEF-Correlator")?, 
-                           HeaderValue::from_str(&format!("<{}>", uuid::Uuid::new_v4()))?)
-                    .header(HeaderName::new_from_ascii_str("X-Priority")?, 
-                           HeaderValue::from_str("3")?)
-                    .header(HeaderName::new_from_ascii_str("X-MSMail-Priority")?, 
-                           HeaderValue::from_str("Normal")?);
-            },
-            "Apple Mail" => {
-                // Headers Apple Mail réalistes
-                message_builder = message_builder
-                    .header(HeaderName::new_from_ascii_str("X-Mailer")?, 
-                           HeaderValue::from_str(&format!("Apple Mail ({})", version))?)
-                    .header(HeaderName::new_from_ascii_str("X-Apple-Mail-Remote-Attachments")?, 
-                           HeaderValue::from_str("NO")?)
-                    .header(HeaderName::new_from_ascii_str("X-Apple-Base-Url")?, 
-                           HeaderValue::from_str("")?)
-                    .header(HeaderName::new_from_ascii_str("X-Universally-Unique-Identifier")?, 
-                           HeaderValue::from_str(&uuid::Uuid::new_v4().to_string())?);
-            },
-            "Mailbird" => {
-                // Headers Mailbird réalistes
-                message_builder = message_builder
-                    .header(HeaderName::new_from_ascii_str("X-Mailer")?, 
-                           HeaderValue::from_str(&format!("Mailbird {}", version))?)
-                    .header(HeaderName::new_from_ascii_str("X-Mailbird-Version")?, 
-                           HeaderValue::from_str(version)?)
-                    .header(HeaderName::new_from_ascii_str("X-Priority")?, 
-                           HeaderValue::from_str("3")?);
-            },
-            "BlueMail" => {
-                // Headers BlueMail réalistes
-                message_builder = message_builder
-                    .header(HeaderName::new_from_ascii_str("X-Mailer")?, 
-                           HeaderValue::from_str(&format!("BlueMail {}", version))?)
-                    .header(HeaderName::new_from_ascii_str("X-BlueMail-Version")?, 
-                           HeaderValue::from_str(version)?)
-                    .header(HeaderName::new_from_ascii_str("X-Mobile-Client")?, 
-                           HeaderValue::from_str("true")?);
-            },
-            _ => {
-                // Headers génériques
-                message_builder = message_builder
-                    .header(HeaderName::new_from_ascii_str("X-Mailer")?, 
-                           HeaderValue::from_str(user_agent)?);
-            }
-        }
-        
-        // Headers communs anti-spam pour tous les clients
-        message_builder = message_builder
-            .header(HeaderName::new_from_ascii_str("X-Originating-IP")?, 
-                   HeaderValue::from_str(&format!("[{}]", self.generer_ip_realiste()))?)
-            .header(HeaderName::new_from_ascii_str("X-Spam-Status")?, 
-                   HeaderValue::from_str("No, score=0.0 required=5.0")?)
-            .header(HeaderName::new_from_ascii_str("X-Spam-Score")?, 
-                   HeaderValue::from_str("0.0")?)
-            .header(HeaderName::new_from_ascii_str("X-Virus-Scanned")?, 
-                   HeaderValue::from_str("ClamAV 1.2.1")?)
-            .header(HeaderName::new_from_ascii_str("Authentication-Results")?, 
-                   HeaderValue::from_str(&format!("{}; dkim=pass; spf=pass; dmarc=pass", smtp_config.smtp_host))?)
-            .header(HeaderName::new_from_ascii_str("X-Auto-Response-Suppress")?, 
-                   HeaderValue::from_str("DR, RN, NRN, OOF, AutoReply")?)
-            .header(HeaderName::new_from_ascii_str("X-Content-Filtered-By")?, 
-                   HeaderValue::from_str("Mailman/MimeDel 2.1.39")?)
-            .header(HeaderName::new_from_ascii_str("X-Sender-Verified")?, 
-                   HeaderValue::from_str("TRUE")?)
-            .header(HeaderName::new_from_ascii_str("List-Unsubscribe")?, 
-                   HeaderValue::from_str("<mailto:unsubscribe@example.com>")?)
-            .header(HeaderName::new_from_ascii_str("Precedence")?, 
-                   HeaderValue::from_str("bulk")?);
-        
-        Ok(message_builder)
-    }
     
     fn generer_ip_realiste(&self) -> String {
-        use rand::Rng;
+        use rand::seq::SliceRandom;
         let ips_pool = vec![
             "192.168.1.100", "10.0.0.25", "172.16.0.50",
             "192.168.10.15", "10.1.1.75", "172.20.0.100",
             "192.168.100.200", "10.10.10.10", "172.30.1.1"
         ];
         ips_pool.choose(&mut rand::thread_rng()).unwrap().to_string()
+    }
+    
+    fn generer_html_unique(&self, domaine: &str, expediteur: &str, variables: &std::collections::HashMap<String, String>) -> String {
+        use rand::seq::SliceRandom;
+        
+        // Couleurs selon domaine
+        let (couleur_primaire, couleur_secondaire) = match domaine {
+            "gmail.com" => ("#ea4335", "#fbbc04"),
+            "yahoo.com" => ("#720e9e", "#00d2ff"),
+            "orange.fr" => ("#ff7900", "#000000"),
+            "aol.com" => ("#0066cc", "#ff6600"),
+            _ => ("#667eea", "#764ba2")
+        };
+        
+        // Templates HTML variés
+        let templates = vec![
+            format!(r#"<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Message</title></head>
+<body style="font-family: Arial; margin: 20px; background: #f9f9f9;">
+    <div style="max-width: 500px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px;">
+        <h2 style="color: {};">Bonjour {},</h2>
+        <p>Suite à notre collaboration, nous souhaitons vous présenter nos innovations.</p>
+        <div style="background: {}; color: white; padding: 15px; border-radius: 5px; text-align: center; margin: 20px 0;">
+            <a href="https://example.com/offer?ref={}" style="color: white; text-decoration: none; font-weight: bold;">
+                Découvrir l'offre →
+            </a>
+        </div>
+        <p>Cordialement,<br>{}</p>
+        <small style="color: #666;">Message pour {}</small>
+    </div>
+</body></html>"#, 
+            couleur_primaire, 
+            variables.get("PRENOM").unwrap_or(&"Client".to_string()),
+            couleur_secondaire,
+            variables.get("NOM").unwrap_or(&"REF".to_string()),
+            expediteur,
+            domaine),
+            
+            format!(r#"<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Offre</title></head>
+<body style="font-family: Georgia; margin: 0; padding: 25px; background: linear-gradient(135deg, {} 0%, {} 100%);">
+    <div style="max-width: 550px; margin: 0 auto; background: white; padding: 25px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+        <h1 style="color: {}; border-bottom: 2px solid {}; padding-bottom: 10px;">Cher {},</h1>
+        <p style="font-size: 16px; line-height: 1.6;">Votre entreprise {} retient notre attention.</p>
+        <blockquote style="border-left: 4px solid {}; padding-left: 15px; margin: 20px 0; font-style: italic;">
+            "Nous développons des solutions adaptées à vos besoins spécifiques."
+        </blockquote>
+        <div style="text-align: center; margin: 25px 0;">
+            <a href="https://example.com/demo?client={}" style="background: {}; color: white; padding: 12px 25px; text-decoration: none; border-radius: 20px;">
+                En savoir plus
+            </a>
+        </div>
+        <p>Bien cordialement,<br><strong>{}</strong></p>
+        <hr style="border: 1px solid #eee; margin: 20px 0;">
+        <p style="font-size: 12px; color: #888;">Réservé aux utilisateurs {}</p>
+    </div>
+</body></html>"#,
+            couleur_primaire, couleur_secondaire, couleur_primaire, couleur_secondaire,
+            variables.get("PRENOM").unwrap_or(&"Client".to_string()),
+            variables.get("ENTREPRISE").unwrap_or(&"Votre Entreprise".to_string()),
+            couleur_primaire,
+            variables.get("EMAIL").unwrap_or(&"client@example.com".to_string()),
+            couleur_secondaire,
+            expediteur,
+            domaine)
+        ];
+        
+        templates.choose(&mut rand::thread_rng()).unwrap().clone()
     }
     
     fn get_default_html_template(&self) -> String {
