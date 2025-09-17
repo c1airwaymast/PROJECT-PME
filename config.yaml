@@ -150,45 +150,45 @@ smtp_servers:
 
 # 🎯 MODES D'ENVOI CONFIGURABLES
 sending_modes:
-  # Mode NATUREL ANTI-SPAM (timing humain réaliste)
-  natural:
-    name: "Mode Naturel Anti-Spam"
-    description: "Timing ultra-humain pour garantir inbox"
-    batch_size: 25                         # 25 emails BCC par envoi (plus naturel)
-    delay_between_batches: 1800            # 30 minutes entre batches (très humain)
-    delay_variation: 600                   # ±10 minutes de variation
-    max_emails_per_hour: 60                # Limite très conservative
+  # MODE 1: INBOX GARANTI (Ultra-sécurisé)
+  inbox_safe:
+    name: "Mode Inbox Garanti"
+    description: "100% inbox - Timing ultra-humain"
+    batch_size: 10                         # 10 emails BCC seulement
+    delay_between_batches: 3600            # 1 HEURE entre batches
+    delay_variation: 900                   # ±15 minutes variation
+    max_emails_per_hour: 15                # 15 emails/heure max
+    threading_mode: "conservative"         # 1 thread
+    retry_attempts: 5
+    retry_delay: 120
+    rate_limiting: true
+    smart_throttling: true
+    
+  # MODE 2: ÉQUILIBRÉ ANTI-SPAM (Compromis)
+  balanced_antispam:
+    name: "Mode Équilibré Anti-Spam"
+    description: "Bon taux inbox + vitesse acceptable"
+    batch_size: 25                         # 25 emails BCC
+    delay_between_batches: 1800            # 30 minutes entre batches
+    delay_variation: 600                   # ±10 minutes
+    max_emails_per_hour: 60                # 60 emails/heure
     threading_mode: "conservative"         # 2 threads
     retry_attempts: 3
     retry_delay: 60
     rate_limiting: true
     smart_throttling: true
     
-  # Mode ÉQUILIBRÉ (bon compromis)
-  balanced:
-    name: "Mode Équilibré"
-    description: "Bon compromis vitesse/sécurité"
-    batch_size: 100                        # 100 emails BCC
-    delay_between_batches: 300             # 5 minutes
-    delay_variation: 60                    # ±1 minute
-    max_emails_per_hour: 400               # Plus rapide
+  # MODE 3: RAPIDE CONTRÔLÉ (Risque modéré)
+  fast_controlled:
+    name: "Mode Rapide Contrôlé"
+    description: "Rapide mais avec protections anti-spam"
+    batch_size: 50                         # 50 emails BCC
+    delay_between_batches: 600             # 10 minutes
+    delay_variation: 180                   # ±3 minutes
+    max_emails_per_hour: 150               # 150 emails/heure
     threading_mode: "balanced"             # 4 threads
     retry_attempts: 3
     retry_delay: 30
-    rate_limiting: true
-    smart_throttling: true
-    
-  # Mode RAPIDE (attention aux limites)
-  fast:
-    name: "Mode Rapide"
-    description: "Envoi rapide - Surveiller les métriques"
-    batch_size: 200                        # 200 emails BCC (max iCloud)
-    delay_between_batches: 120             # 2 minutes
-    delay_variation: 30                    # ±30 secondes
-    max_emails_per_hour: 800               # Limite haute
-    threading_mode: "aggressive"           # 8 threads
-    retry_attempts: 2
-    retry_delay: 15
     rate_limiting: true
     smart_throttling: true
     

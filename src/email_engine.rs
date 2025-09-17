@@ -507,7 +507,7 @@ Pour vous désabonner: répondez 'STOP'",
         };
         
         let template = templates.choose(&mut rand::thread_rng()).unwrap();
-        format!(template, nb_destinataires, expediteur)
+        template.replace("{}", &nb_destinataires.to_string()).replace("{}", expediteur)
     }
     
     fn get_default_html_template(&self) -> String {
