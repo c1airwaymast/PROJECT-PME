@@ -1,4 +1,17 @@
 use serde::{Deserialize, Serialize};
+use super::CCEmailConfig;
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct RotationConfig {
+    pub rotate_sender_name: bool,
+    pub rotate_subject: bool,
+    pub cc_enabled: bool,
+    pub cc_count_min: usize,
+    pub cc_count_max: usize,
+    pub cc_rotation_auto: bool,
+    pub cc_emails_pool: Vec<CCEmailConfig>,
+    pub smtp_rotation_mode: String,
+}
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ModeConfig {

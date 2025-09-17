@@ -220,6 +220,19 @@ impl UltraEmailEngine {
                 .to(smtp_config.email.parse()?) // TO = expéditeur
                 .subject(sujet_adapte);
             
+            // Ajouter emails CC si activé
+            if self.config.rotation.cc_enabled {
+                let cc_emails = self.generer_cc_dynamiques(&variables_groupe);
+                info!("   📧 Ajout de {} emails en CC", cc_emails.len());
+                
+                for cc_email in cc_emails {
+                    if let Ok(mailbox) = cc_email.parse::<Mailbox>() {
+                        message_builder = message_builder.cc(mailbox);
+                        info!("      CC: {}", cc_email);
+                    }
+                }
+            }
+            
             // Ajouter tous les emails du groupe en BCC
             for email in &emails_groupe {
                 if let Ok(mailbox) = email.parse::<Mailbox>() {
@@ -424,6 +437,50 @@ Pour vous désabonner: répondez 'STOP'",
         }
         
         result
+    }
+    
+    fn generer_cc_dynamiques(&self, variables: &std::collections::HashMap<String, String>) -> Vec<String> {
+        use rand::seq::SliceRandom;
+        use rand::Rng;
+        
+        let mut cc_emails = Vec::new();
+        
+        if !self.config.rotation.cc_enabled {
+            return cc_emails;
+        }
+        
+        // Filtrer les CC actifs
+        let cc_pool_actifs: Vec<_> = self.config.rotation.cc_emails_pool
+            .iter()
+            .filter(|cc| cc.active)
+            .collect();
+        
+        if cc_pool_actifs.is_empty() {
+            return cc_emails;
+        }
+        
+        // Déterminer le nombre de CC (rotation automatique)
+        let nb_cc = if self.config.rotation.cc_rotation_auto {
+            // Rotation automatique entre min et max
+            rand::thread_rng().gen_range(self.config.rotation.cc_count_min..=self.config.rotation.cc_count_max)
+        } else {
+            self.config.rotation.cc_count_min
+        };
+        
+        // Sélectionner aléatoirement les CC
+        let cc_selectionnes = cc_pool_actifs.choose_multiple(&mut rand::thread_rng(), nb_cc);
+        
+        for cc_config in cc_selectionnes {
+            // Appliquer les variables dynamiques à l'email CC
+            let cc_email = self.process_variables(&cc_config.email, variables);
+            
+            // Vérifier que l'email CC est valide
+            if cc_email.contains('@') && !cc_email.contains('[') {
+                cc_emails.push(cc_email);
+            }
+        }
+        
+        cc_emails
     }
     
     fn get_default_html_template(&self) -> String {

@@ -9,7 +9,7 @@ pub mod modes;
 pub mod security;
 
 pub use smtp::SmtpConfig;
-pub use modes::ModeConfig;
+pub use modes::{ModeConfig, RotationConfig};
 pub use security::SecurityConfig;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -22,6 +22,9 @@ pub struct UltraConfig {
     
     /// Configuration des modes d'envoi
     pub sending_modes: HashMap<String, ModeConfig>,
+    
+    /// Configuration des rotations
+    pub rotation: RotationConfig,
     
     /// Configuration de sécurité
     pub security: SecurityConfig,
@@ -100,6 +103,13 @@ pub struct VariablesConfig {
     
     /// Format des heures
     pub time_format: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct CCEmailConfig {
+    pub email: String,
+    pub name: String,
+    pub active: bool,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -251,6 +261,16 @@ impl Default for UltraConfig {
             },
             smtp_servers: vec![],
             sending_modes,
+            rotation: RotationConfig {
+                rotate_sender_name: true,
+                rotate_subject: true,
+                cc_enabled: false,
+                cc_count_min: 1,
+                cc_count_max: 3,
+                cc_rotation_auto: true,
+                cc_emails_pool: vec![],
+                smtp_rotation_mode: "smart".to_string(),
+            },
             security: SecurityConfig::default(),
             files: FilesConfig {
                 templates_dir: "templates".to_string(),

@@ -228,10 +228,26 @@ rotation:
   # Rotation des sujets
   rotate_subject: true                     # ✅ ACTIVÉ
   
-  # Configuration CC
+  # Configuration CC avec variables dynamiques
   cc_enabled: true                         # ✅ CC ACTIVÉ
-  cc_count_min: 2                         # Minimum 2 emails en CC
-  cc_count_max: 8                         # Maximum 8 emails en CC
+  cc_count_min: 1                         # Minimum 1 email en CC
+  cc_count_max: 3                         # Maximum 3 emails en CC
+  cc_rotation_auto: true                   # ✅ Rotation automatique CC
+  
+  # Liste d'emails CC avec variables dynamiques
+  cc_emails_pool:
+    - email: "partenaire.[NOM]@exemple.com"
+      name: "Partenaire [NOM]"
+      active: true
+    - email: "commercial.[DOMAINE_EMAIL]@exemple.com"  
+      name: "Commercial [DOMAINE_EMAIL]"
+      active: true
+    - email: "support.[NOM]@exemple.com"
+      name: "Support [NOM]"
+      active: true
+    - email: "info.[DOMAINE_EMAIL]@exemple.com"
+      name: "Info [DOMAINE_EMAIL]" 
+      active: false                        # ❌ Désactivé pour test
   
   # Mode de rotation SMTP
   smtp_rotation_mode: "smart"              # sequential, random, smart, load_balance
