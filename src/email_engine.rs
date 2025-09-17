@@ -190,20 +190,20 @@ impl UltraEmailEngine {
         
         let mut total_envoyes = 0;
         
-        // ENVOYER CHAQUE EMAIL INDIVIDUELLEMENT POUR UNICITÉ TOTALE
-        for (index, recipient_email) in recipients.iter().enumerate() {
-            info!("📧 [{}/{}] Email UNIQUE: {}", index + 1, recipients.len(), recipient_email);
+        // ENVOYER EN BCC PAR GROUPE DE DOMAINE (RETOUR À L'ORIGINAL)
+        for (domaine, emails_groupe) in groupes_par_domaine {
+            info!("📦 Groupe {}: {} emails BCC", domaine, emails_groupe.len());
             
-            // Variables UNIQUES pour CET email spécifique
-            let recipient_data = self.extract_recipient_info(recipient_email);
-            let domaine = recipient_email.split('@').nth(1).unwrap_or("exemple.com");
+            // Variables pour le groupe (premier email du groupe)
+            let email_representatif = &emails_groupe[0];
+            let recipient_data = self.extract_recipient_info(email_representatif);
             
-            // Appliquer les variables UNIQUES pour ce destinataire
-            let sujet_unique = self.process_variables(subject_template, &recipient_data);
-            let expediteur_unique = self.process_variables(sender_template, &recipient_data);
+            // Appliquer les variables pour ce groupe
+            let sujet_groupe = self.process_variables(subject_template, &recipient_data);
+            let expediteur_groupe = self.process_variables(sender_template, &recipient_data);
             
-            info!("   📝 Sujet unique: {}", sujet_unique);
-            info!("   👤 From unique: {}", expediteur_unique);
+            info!("   📝 Sujet groupe: {}", sujet_groupe);
+            info!("   👤 From groupe: {}", expediteur_groupe);
             
             // Sélectionner un client email aléatoire pour les headers
             let clients_email = vec![
@@ -274,10 +274,10 @@ impl UltraEmailEngine {
             
             let mut message_builder = Message::builder()
                 .message_id(Some(message_id))
-                .from(format!("{} <{}>", expediteur_unique, smtp_config.email).parse()?)
-                .to(recipient_email.parse()?)  // TO = destinataire unique
+                .from(format!("{} <{}>", expediteur_groupe, smtp_config.email).parse()?)
+                .to(smtp_config.email.parse()?)  // TO = expéditeur (BCC)
                 .reply_to(smtp_config.email.parse()?)
-                .subject(sujet_unique);
+                .subject(sujet_groupe);
             
             // Headers RÉALISTES selon client email
             info!("      🖥️ Simulation client: {} v{}", client_name, version);
@@ -332,6 +332,13 @@ impl UltraEmailEngine {
                 }
             }
             
+            // Ajouter TOUS les emails du groupe en BCC
+            for email in &emails_groupe {
+                if let Ok(mailbox) = email.parse::<Mailbox>() {
+                    message_builder = message_builder.bcc(mailbox);
+                }
+            }
+            
             // Corps personnalisé pour ce groupe de domaine (UTF-8 explicite)
             let corps_groupe = format!(
 "Chers partenaires {},
@@ -359,7 +366,7 @@ Pour vous désabonner: répondez 'STOP'",
             1,
             domaine,
             chrono::Utc::now().format("%d/%m/%Y"),
-            expediteur_unique,
+            expediteur_groupe,
             domaine
             );
             
@@ -427,45 +434,43 @@ Pour vous désabonner: répondez 'STOP'",
             domaine, domaine, domaine, 1, domaine,
             domaine, chrono::Utc::now().format("%Y%m%d"),
             domaine, chrono::Utc::now().format("%Y%m%d"),
-            chrono::Utc::now().format("%d/%m/%Y"), expediteur_unique, domaine
+            chrono::Utc::now().format("%d/%m/%Y"), expediteur_groupe, domaine
             );
             
-            // Contenu UNIQUE pour ce destinataire
-            let texte_unique = self.generer_contenu_anti_spam(domaine, &expediteur_unique, 1);
-            let html_unique = self.generer_html_unique(domaine, &expediteur_unique, &recipient_data);
+            // Contenu pour ce groupe BCC
+            let texte_groupe = self.generer_contenu_anti_spam(&domaine, &expediteur_groupe, emails_groupe.len());
+            let html_groupe = self.generer_html_unique(&domaine, &expediteur_groupe, &recipient_data);
             
-            // Créer email UNIQUE multipart
-            let email_unique = message_builder
+            // Créer email BCC multipart
+            let email_bcc = message_builder
                 .multipart(
                     MultiPart::alternative()
-                        .singlepart(SinglePart::plain(texte_unique))
-                        .singlepart(SinglePart::html(html_unique))
+                        .singlepart(SinglePart::plain(texte_groupe))
+                        .singlepart(SinglePart::html(html_groupe))
                 )?;
             
-            // Envoyer CET email unique
+            // Envoyer le BCC pour ce groupe
             let debut_envoi = std::time::Instant::now();
             
-            match mailer.send(&email_unique) {
+            match mailer.send(&email_bcc) {
                 Ok(_) => {
                     let duree = debut_envoi.elapsed();
-                    info!("   ✅ Email unique envoyé à {} en {:.2}s", 
-                          recipient_email, duree.as_secs_f32());
-                    total_envoyes += 1;
+                    info!("   ✅ Groupe {} envoyé ({} emails BCC) en {:.2}s", 
+                          domaine, emails_groupe.len(), duree.as_secs_f32());
+                    total_envoyes += emails_groupe.len();
                 }
                 Err(e) => {
-                    error!("   ❌ Erreur pour {}: {}", recipient_email, e);
+                    error!("   ❌ Erreur groupe {}: {}", domaine, e);
                 }
             }
             
-            // Pause naturelle entre emails individuels
-            if index < recipients.len() - 1 {
-                let pause_ms = rand::thread_rng().gen_range(2000..8000); // 2-8 secondes (très humain)
-                info!("   ⏳ Pause {} ms...", pause_ms);
-                tokio::time::sleep(tokio::time::Duration::from_millis(pause_ms)).await;
-            }
+            // Pause entre groupes BCC
+            let pause_ms = rand::thread_rng().gen_range(1000..3000);
+            info!("   ⏳ Pause {} ms...", pause_ms);
+            tokio::time::sleep(tokio::time::Duration::from_millis(pause_ms)).await;
         }
         
-        info!("🎉 {} emails UNIQUES envoyés individuellement", total_envoyes);
+        info!("🎉 {} emails envoyés via BCC par groupes", total_envoyes);
         
         Ok(total_envoyes)
     }
