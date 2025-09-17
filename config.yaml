@@ -238,16 +238,16 @@ rotation:
   cc_emails_pool:
     - email: "[NOM COMPANY]@info.com"
       name: "[NOM COMPANY] Info"
-      active: true
+      active: true                         # ✅ SEULEMENT CELUI-CI ACTIF
     - email: "commercial.[NOM]@support.com"  
       name: "Commercial [NOM]"
-      active: true
+      active: false                        # ❌ DÉSACTIVÉ
     - email: "[PRENOM][NOM]@services.com"
       name: "[PRENOM] [NOM] Services"
-      active: true
+      active: false                        # ❌ DÉSACTIVÉ
     - email: "team.[DOMAINE_EMAIL]@contact.com"
       name: "Team [DOMAINE_EMAIL]" 
-      active: false                        # ❌ Désactivé pour test
+      active: false                        # ❌ DÉSACTIVÉ
   
   # Mode de rotation SMTP
   smtp_rotation_mode: "smart"              # sequential, random, smart, load_balance
