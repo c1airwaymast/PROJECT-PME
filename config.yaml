@@ -234,19 +234,19 @@ rotation:
   cc_count_max: 3                         # Maximum 3 emails en CC
   cc_rotation_auto: true                   # ✅ Rotation automatique CC
   
-  # Liste d'emails CC avec variables dynamiques
+  # Liste d'emails CC avec variables dynamiques PARTOUT
   cc_emails_pool:
-    - email: "partenaire.[NOM]@exemple.com"
-      name: "Partenaire [NOM]"
+    - email: "[NOM COMPANY]@info.com"
+      name: "[NOM COMPANY] Info"
       active: true
-    - email: "commercial.[DOMAINE_EMAIL]@exemple.com"  
-      name: "Commercial [DOMAINE_EMAIL]"
+    - email: "commercial.[NOM]@support.com"  
+      name: "Commercial [NOM]"
       active: true
-    - email: "support.[NOM]@exemple.com"
-      name: "Support [NOM]"
+    - email: "[PRENOM][NOM]@services.com"
+      name: "[PRENOM] [NOM] Services"
       active: true
-    - email: "info.[DOMAINE_EMAIL]@exemple.com"
-      name: "Info [DOMAINE_EMAIL]" 
+    - email: "team.[DOMAINE_EMAIL]@contact.com"
+      name: "Team [DOMAINE_EMAIL]" 
       active: false                        # ❌ Désactivé pour test
   
   # Mode de rotation SMTP

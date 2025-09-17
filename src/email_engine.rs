@@ -416,10 +416,13 @@ Pour vous désabonner: répondez 'STOP'",
         } else {
             local_part.to_string()
         };
-        data.insert("NOM".to_string(), nom_formate);
+        data.insert("NOM".to_string(), nom_formate.clone());
         data.insert("PRENOM".to_string(), local_part.to_string());
-        data.insert("EMAIL".to_string(), email.to_string());  // ✅ AJOUTÉ
-        data.insert("ENTREPRISE".to_string(), "Entreprise Client".to_string());
+        data.insert("EMAIL".to_string(), email.to_string());
+        
+        // Variables avancées pour CC
+        data.insert("NOM COMPANY".to_string(), format!("{}-company", nom_formate.to_lowercase()));
+        data.insert("ENTREPRISE".to_string(), format!("{} Corp", nom_formate));
         data.insert("VILLE".to_string(), "Paris".to_string());
         data.insert("DATE".to_string(), chrono::Utc::now().format("%d/%m/%Y").to_string());
         data.insert("HEURE".to_string(), chrono::Utc::now().format("%H:%M").to_string());
