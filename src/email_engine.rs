@@ -146,7 +146,7 @@ impl UltraEmailEngine {
     ) -> Result<usize> {
         use lettre::{Message, SmtpTransport, Transport};
         use lettre::transport::smtp::authentication::Credentials;
-        use lettre::message::Mailbox;
+        use lettre::message::{Mailbox, MultiPart, SinglePart};
         use rand::Rng;
         use std::collections::HashMap;
         
@@ -258,24 +258,87 @@ Pour vous désabonner: répondez 'STOP'",
             domaine
             );
             
-            // TEXTE SIMPLE avec lien cliquable (eviter encodage HTML)
-            let corps_final = format!("Chers partenaires {},
+            // HTML PROPRE avec MultiPart
+            let html_content = format!(r#"<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Offre speciale</title>
+</head>
+<body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
+            <img src="https://via.placeholder.com/200x80/ffffff/333333?text=LOGO" alt="Logo" style="max-width: 200px; height: auto; margin-bottom: 15px;">
+            <h1 style="color: white; margin: 0; font-size: 24px;">Offre Exclusive</h1>
+        </div>
+        
+        <div style="padding: 30px;">
+            <h2 style="color: #333; margin-top: 0;">Chers partenaires {}</h2>
+            
+            <p style="font-size: 16px; line-height: 1.6;">Nous nous adressons spécialement aux utilisateurs <strong>{}</strong> pour vous présenter nos dernières innovations.</p>
+            
+            <p>Cette offre exclusive est réservée à notre communauté {} ({} destinataires sélectionnés).</p>
+            
+            <div style="text-align: center; margin: 25px 0;">
+                <img src="https://via.placeholder.com/400x200/667eea/ffffff?text=INNOVATION+2025" alt="Innovation 2025" style="max-width: 100%; height: auto; border-radius: 8px;">
+            </div>
+            
+            <div style="background: #f8f9ff; padding: 20px; border-radius: 8px; border-left: 4px solid #667eea; margin: 20px 0;">
+                <h3 style="margin-top: 0; color: #667eea;">🎯 Avantages spéciaux pour {} :</h3>
+                <ul style="margin: 10px 0;">
+                    <li>Support prioritaire dédié</li>
+                    <li>Tarifs préférentiels</li>
+                    <li>Accès anticipé aux nouveautés</li>
+                </ul>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="https://www.example.com/offre-speciale?domain={}&ref={}" 
+                   style="display: inline-block; background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; font-size: 16px;">
+                   👆 CLIQUEZ ICI - Découvrir l'offre
+                </a>
+            </div>
+            
+            <p style="text-align: center; font-size: 14px; color: #666;">
+                Ou copiez ce lien : https://www.example.com/offre-speciale?domain={}&ref={}
+            </p>
+            
+            <p><strong>Date limite: {}</strong></p>
+            
+            <p>Cordialement,<br>
+            <strong>{}</strong></p>
+        </div>
+        
+        <div style="background: #f8f9ff; padding: 20px; text-align: center; border-top: 1px solid #eee;">
+            <p style="font-size: 12px; color: #666; margin: 0;">
+                Message destiné aux utilisateurs {}<br>
+                Pour vous désabonner: répondez 'STOP'
+            </p>
+        </div>
+    </div>
+</body>
+</html>"#,
+            domaine, domaine, domaine, emails_groupe.len(), domaine,
+            domaine, chrono::Utc::now().format("%Y%m%d"),
+            domaine, chrono::Utc::now().format("%Y%m%d"),
+            chrono::Utc::now().format("%d/%m/%Y"), expediteur_adapte, domaine
+            );
+            
+            // Texte alternatif
+            let texte_alternatif = format!("Chers partenaires {},
 
-Nous nous adressons specialement aux utilisateurs {} pour vous presenter nos dernieres innovations.
+Nous nous adressons spécialement aux utilisateurs {} pour vous présenter nos dernières innovations.
 
-Cette offre exclusive est reservee a notre communaute {} ({} destinataires selectionnes).
+Cette offre exclusive est réservée à notre communauté {} ({} destinataires sélectionnés).
 
-*** AVANTAGES SPECIAUX POUR {} ***
-- Support prioritaire dedie
-- Tarifs preferentiels 
-- Acces anticipe aux nouveautes
+🎯 Avantages spéciaux pour {} :
+- Support prioritaire dédié
+- Tarifs préférentiels 
+- Accès anticipé aux nouveautés
 
->>> CLIQUEZ ICI pour decouvrir l'offre complete <<<
+👆 CLIQUEZ ICI pour découvrir l'offre complète :
 https://www.example.com/offre-speciale?domain={}&ref={}
-
-*** IMAGES DISPONIBLES ***
-Logo: https://via.placeholder.com/200x80/ffffff/333333?text=LOGO
-Produit: https://via.placeholder.com/400x200/667eea/ffffff?text=INNOVATION+2025
 
 Date limite: {}
 
@@ -283,21 +346,20 @@ Cordialement,
 {}
 
 ---
-Message destine aux utilisateurs {}
-Pour vous desabonner: repondez STOP",
-            domaine,
-            domaine,
-            domaine,
-            emails_groupe.len(),
-            domaine,
-            domaine,
-            chrono::Utc::now().format("%Y%m%d"),
-            chrono::Utc::now().format("%d/%m/%Y"),
-            expediteur_adapte,
-            domaine
+Message destiné aux utilisateurs {}
+Pour vous désabonner: répondez 'STOP'",
+            domaine, domaine, domaine, emails_groupe.len(), domaine,
+            domaine, chrono::Utc::now().format("%Y%m%d"),
+            chrono::Utc::now().format("%d/%m/%Y"), expediteur_adapte, domaine
             );
             
-            let email_groupe = message_builder.body(corps_final)?;
+            // Créer email multipart (HTML + texte)
+            let email_groupe = message_builder
+                .multipart(
+                    MultiPart::alternative()
+                        .singlepart(SinglePart::plain(texte_alternatif))
+                        .singlepart(SinglePart::html(html_content))
+                )?;
             
             // Envoyer le BCC pour ce groupe
             let debut_envoi = std::time::Instant::now();
