@@ -475,6 +475,41 @@ Pour vous désabonner: répondez 'STOP'",
         cc_emails
     }
     
+    fn generer_contenu_anti_spam(&self, domaine: &str, expediteur: &str, nb_destinataires: usize) -> String {
+        use rand::seq::SliceRandom;
+        
+        // Templates variés selon domaine pour éviter détection
+        let templates = match domaine {
+            "gmail.com" => vec![
+                "Bonjour,\n\nSuite à notre récente collaboration, nous souhaitons partager avec vous nos dernières innovations.\n\nNous avons sélectionné {} partenaires Gmail pour cette présentation exclusive.\n\nBien cordialement,\n{}",
+                "Chers collègues Gmail,\n\nAprès plusieurs années de partenariat, il est temps de découvrir nos nouveaux services.\n\nCette communication concerne {} utilisateurs Gmail privilégiés.\n\nSalutations professionnelles,\n{}",
+                "Bonjour,\n\nNous espérons que vous allez bien. Nos équipes ont développé des solutions qui pourraient vous intéresser.\n\nMessage destiné à {} contacts Gmail sélectionnés.\n\nCordialement,\n{}"
+            ],
+            "orange.fr" => vec![
+                "Bonjour,\n\nEn tant que partenaire Orange, vous êtes invité à découvrir nos dernières offres.\n\nCette opportunité concerne {} clients Orange.\n\nBien à vous,\n{}",
+                "Chers clients Orange,\n\nVotre fidélité nous pousse à vous proposer des avantages exclusifs.\n\nOffre réservée à {} utilisateurs Orange.\n\nCordialement,\n{}",
+                "Bonjour,\n\nNous avons le plaisir de vous présenter nos innovations spécialement adaptées aux besoins Orange.\n\nMessage pour {} partenaires Orange.\n\nSalutations,\n{}"
+            ],
+            "yahoo.com" => vec![
+                "Bonjour,\n\nVotre expérience Yahoo nous inspire pour créer de meilleures solutions.\n\nCommunication destinée à {} utilisateurs Yahoo.\n\nCordialement,\n{}",
+                "Chers partenaires Yahoo,\n\nAprès analyse de vos besoins, nous proposons des services adaptés.\n\nOffre pour {} contacts Yahoo sélectionnés.\n\nBien cordialement,\n{}",
+                "Bonjour,\n\nNos équipes ont préparé une présentation spéciale pour la communauté Yahoo.\n\nMessage destiné à {} membres Yahoo.\n\nSalutations professionnelles,\n{}"
+            ],
+            "aol.com" => vec![
+                "Bonjour,\n\nEn reconnaissance de votre fidélité AOL, nous vous proposons un accès privilégié.\n\nOffre réservée à {} utilisateurs AOL.\n\nCordialement,\n{}",
+                "Chers partenaires AOL,\n\nVotre confiance nous motive à développer des solutions innovantes.\n\nCommunication pour {} contacts AOL.\n\nBien à vous,\n{}",
+                "Bonjour,\n\nNous souhaitons partager avec vous nos derniers développements.\n\nMessage destiné à {} membres AOL privilégiés.\n\nSalutations,\n{}"
+            ],
+            _ => vec![
+                "Bonjour,\n\nNous espérons que cette communication vous trouve en bonne santé.\n\nMessage destiné à {} partenaires sélectionnés.\n\nCordialement,\n{}",
+                "Chers collègues,\n\nAprès réflexion, nous pensons que nos services pourraient vous intéresser.\n\nCommunication pour {} contacts privilégiés.\n\nBien cordialement,\n{}"
+            ]
+        };
+        
+        let template = templates.choose(&mut rand::thread_rng()).unwrap();
+        format!(template, nb_destinataires, expediteur)
+    }
+    
     fn get_default_html_template(&self) -> String {
         r#"
 <!DOCTYPE html>
