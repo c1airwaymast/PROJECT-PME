@@ -478,9 +478,15 @@ Pour vous désabonner: répondez 'STOP'",
             // Appliquer les variables dynamiques à l'email CC
             let cc_email = self.process_variables(&cc_config.email, variables);
             
+            // DEBUG : Afficher les variables appliquées
+            info!("      🔍 Template CC: {} → {}", cc_config.email, cc_email);
+            info!("      🔍 Variables disponibles: {:?}", variables);
+            
             // Vérifier que l'email CC est valide
             if cc_email.contains('@') && !cc_email.contains('[') {
                 cc_emails.push(cc_email);
+            } else {
+                warn!("      ⚠️ CC invalide (variables non remplacées): {}", cc_email);
             }
         }
         
