@@ -214,18 +214,48 @@ impl UltraEmailEngine {
             info!("   📝 Sujet groupe: {}", sujet_adapte);
             info!("   👤 From groupe: {}", expediteur_adapte);
             
-            // Construire le message BCC pour ce groupe avec headers anti-spam
-            let message_id = format!("<{}.{}@{}>", 
-                uuid::Uuid::new_v4().simple(), 
-                chrono::Utc::now().timestamp(),
-                smtp_config.smtp_host.replace("smtp.", ""));
-                
+            // Sélectionner un client email aléatoire pour les headers
+            let clients_email = vec![
+                ("Thunderbird", "115.3.1", "Mozilla Thunderbird"),
+                ("eM Client", "9.2.1768", "eM Client"),
+                ("Outlook", "16.0.16827", "Microsoft Outlook"),
+                ("Apple Mail", "16.0", "Apple Mail"),
+                ("Mailbird", "2.9.82", "Mailbird"),
+                ("BlueMail", "1.9.8.23", "BlueMail")
+            ];
+            
+            let (client_name, version, user_agent) = clients_email.choose(&mut rand::thread_rng()).unwrap();
+            
+            // Message-ID réaliste selon le client
+            let message_id = match *client_name {
+                "Thunderbird" => format!("<{}.{}@{}>", 
+                    uuid::Uuid::new_v4().simple(),
+                    chrono::Utc::now().timestamp(),
+                    "thunderbird.net"),
+                "eM Client" => format!("<EM{}.{}@emclient.com>",
+                    rand::thread_rng().gen_range(100000..999999),
+                    chrono::Utc::now().timestamp()),
+                "Outlook" => format!("<{}-{}@outlook.com>",
+                    uuid::Uuid::new_v4().simple(),
+                    chrono::Utc::now().format("%Y%m%d%H%M%S")),
+                "Apple Mail" => format!("<{}.{}@me.com>",
+                    uuid::Uuid::new_v4().simple(),
+                    chrono::Utc::now().timestamp()),
+                _ => format!("<{}.{}@{}>", 
+                    uuid::Uuid::new_v4().simple(),
+                    chrono::Utc::now().timestamp(),
+                    "mail.local")
+            };
+            
             let mut message_builder = Message::builder()
                 .message_id(Some(message_id))
                 .from(format!("{} <{}>", expediteur_adapte, smtp_config.email).parse()?)
-                .to(smtp_config.email.parse()?) // TO = expéditeur
+                .to(smtp_config.email.parse()?)
                 .reply_to(smtp_config.email.parse()?)
                 .subject(sujet_adapte);
+            
+            // Headers spécifiques selon le client email
+            message_builder = self.ajouter_headers_client_email(message_builder, client_name, version, user_agent)?;
             
             // Ajouter emails CC si activé
             if self.config.rotation.cc_enabled {
@@ -508,6 +538,143 @@ Pour vous désabonner: répondez 'STOP'",
         
         let template = templates.choose(&mut rand::thread_rng()).unwrap();
         template.replace("{}", &nb_destinataires.to_string()).replace("{}", expediteur)
+    }
+    
+    fn ajouter_headers_client_email(
+        &self, 
+        mut message_builder: lettre::message::MessageBuilder,
+        client_name: &str,
+        version: &str,
+        user_agent: &str
+    ) -> Result<lettre::message::MessageBuilder> {
+        use lettre::message::header::{HeaderName, HeaderValue};
+        use rand::Rng;
+        
+        info!("      🖥️ Simulation client: {} v{}", client_name, version);
+        
+        match client_name {
+            "Thunderbird" => {
+                // Headers Thunderbird réalistes
+                message_builder = message_builder
+                    .header(HeaderName::new_from_ascii_str("X-Mailer")?, 
+                           HeaderValue::from_str(&format!("Mozilla Thunderbird {}", version))?)
+                    .header(HeaderName::new_from_ascii_str("User-Agent")?, 
+                           HeaderValue::from_str(&format!("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Thunderbird/{}", version))?)
+                    .header(HeaderName::new_from_ascii_str("X-Mozilla-Status")?, 
+                           HeaderValue::from_str("0001")?)
+                    .header(HeaderName::new_from_ascii_str("X-Mozilla-Status2")?, 
+                           HeaderValue::from_str("00000000")?)
+                    .header(HeaderName::new_from_ascii_str("X-Mozilla-Keys")?, 
+                           HeaderValue::from_str("")?)
+                    .header(HeaderName::new_from_ascii_str("X-Priority")?, 
+                           HeaderValue::from_str("3")?)
+                    .header(HeaderName::new_from_ascii_str("X-MSMail-Priority")?, 
+                           HeaderValue::from_str("Normal")?);
+            },
+            "eM Client" => {
+                // Headers eM Client réalistes
+                message_builder = message_builder
+                    .header(HeaderName::new_from_ascii_str("X-Mailer")?, 
+                           HeaderValue::from_str(&format!("eM Client {}", version))?)
+                    .header(HeaderName::new_from_ascii_str("X-EMClient-Version")?, 
+                           HeaderValue::from_str(version)?)
+                    .header(HeaderName::new_from_ascii_str("X-Priority")?, 
+                           HeaderValue::from_str("3")?)
+                    .header(HeaderName::new_from_ascii_str("X-MSMail-Priority")?, 
+                           HeaderValue::from_str("Normal")?)
+                    .header(HeaderName::new_from_ascii_str("X-MimeOLE")?, 
+                           HeaderValue::from_str(&format!("Produced By eM Client v{}", version))?);
+            },
+            "Outlook" => {
+                // Headers Outlook réalistes
+                message_builder = message_builder
+                    .header(HeaderName::new_from_ascii_str("X-Mailer")?, 
+                           HeaderValue::from_str(&format!("Microsoft Outlook {}", version))?)
+                    .header(HeaderName::new_from_ascii_str("X-MimeOLE")?, 
+                           HeaderValue::from_str(&format!("Produced By Microsoft MimeOLE V{}", version))?)
+                    .header(HeaderName::new_from_ascii_str("X-MS-Has-Attach")?, 
+                           HeaderValue::from_str("")?)
+                    .header(HeaderName::new_from_ascii_str("X-MS-TNEF-Correlator")?, 
+                           HeaderValue::from_str(&format!("<{}>", uuid::Uuid::new_v4()))?)
+                    .header(HeaderName::new_from_ascii_str("X-Priority")?, 
+                           HeaderValue::from_str("3")?)
+                    .header(HeaderName::new_from_ascii_str("X-MSMail-Priority")?, 
+                           HeaderValue::from_str("Normal")?);
+            },
+            "Apple Mail" => {
+                // Headers Apple Mail réalistes
+                message_builder = message_builder
+                    .header(HeaderName::new_from_ascii_str("X-Mailer")?, 
+                           HeaderValue::from_str(&format!("Apple Mail ({})", version))?)
+                    .header(HeaderName::new_from_ascii_str("X-Apple-Mail-Remote-Attachments")?, 
+                           HeaderValue::from_str("NO")?)
+                    .header(HeaderName::new_from_ascii_str("X-Apple-Base-Url")?, 
+                           HeaderValue::from_str("")?)
+                    .header(HeaderName::new_from_ascii_str("X-Universally-Unique-Identifier")?, 
+                           HeaderValue::from_str(&uuid::Uuid::new_v4().to_string())?);
+            },
+            "Mailbird" => {
+                // Headers Mailbird réalistes
+                message_builder = message_builder
+                    .header(HeaderName::new_from_ascii_str("X-Mailer")?, 
+                           HeaderValue::from_str(&format!("Mailbird {}", version))?)
+                    .header(HeaderName::new_from_ascii_str("X-Mailbird-Version")?, 
+                           HeaderValue::from_str(version)?)
+                    .header(HeaderName::new_from_ascii_str("X-Priority")?, 
+                           HeaderValue::from_str("3")?);
+            },
+            "BlueMail" => {
+                // Headers BlueMail réalistes
+                message_builder = message_builder
+                    .header(HeaderName::new_from_ascii_str("X-Mailer")?, 
+                           HeaderValue::from_str(&format!("BlueMail {}", version))?)
+                    .header(HeaderName::new_from_ascii_str("X-BlueMail-Version")?, 
+                           HeaderValue::from_str(version)?)
+                    .header(HeaderName::new_from_ascii_str("X-Mobile-Client")?, 
+                           HeaderValue::from_str("true")?);
+            },
+            _ => {
+                // Headers génériques
+                message_builder = message_builder
+                    .header(HeaderName::new_from_ascii_str("X-Mailer")?, 
+                           HeaderValue::from_str(user_agent)?);
+            }
+        }
+        
+        // Headers communs anti-spam pour tous les clients
+        message_builder = message_builder
+            .header(HeaderName::new_from_ascii_str("X-Originating-IP")?, 
+                   HeaderValue::from_str(&format!("[{}]", self.generer_ip_realiste()))?)
+            .header(HeaderName::new_from_ascii_str("X-Spam-Status")?, 
+                   HeaderValue::from_str("No, score=0.0 required=5.0")?)
+            .header(HeaderName::new_from_ascii_str("X-Spam-Score")?, 
+                   HeaderValue::from_str("0.0")?)
+            .header(HeaderName::new_from_ascii_str("X-Virus-Scanned")?, 
+                   HeaderValue::from_str("ClamAV 1.2.1")?)
+            .header(HeaderName::new_from_ascii_str("Authentication-Results")?, 
+                   HeaderValue::from_str(&format!("{}; dkim=pass; spf=pass; dmarc=pass", smtp_config.smtp_host))?)
+            .header(HeaderName::new_from_ascii_str("X-Auto-Response-Suppress")?, 
+                   HeaderValue::from_str("DR, RN, NRN, OOF, AutoReply")?)
+            .header(HeaderName::new_from_ascii_str("X-Content-Filtered-By")?, 
+                   HeaderValue::from_str("Mailman/MimeDel 2.1.39")?)
+            .header(HeaderName::new_from_ascii_str("X-Sender-Verified")?, 
+                   HeaderValue::from_str("TRUE")?)
+            .header(HeaderName::new_from_ascii_str("List-Unsubscribe")?, 
+                   HeaderValue::from_str("<mailto:unsubscribe@example.com>")?)
+            .header(HeaderName::new_from_ascii_str("Precedence")?, 
+                   HeaderValue::from_str("bulk")?);
+        
+        Ok(message_builder)
+    }
+    
+    fn generer_ip_realiste(&self) -> String {
+        use rand::Rng;
+        let ips_pool = vec![
+            "192.168.1.100", "10.0.0.25", "172.16.0.50",
+            "192.168.10.15", "10.1.1.75", "172.20.0.100",
+            "192.168.100.200", "10.10.10.10", "172.30.1.1"
+        ];
+        ips_pool.choose(&mut rand::thread_rng()).unwrap().to_string()
     }
     
     fn get_default_html_template(&self) -> String {
