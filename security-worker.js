@@ -7,7 +7,7 @@
 class BotDetector {
   constructor() {
     // Seuil de détection (70% = 0.7)
-    this.BOT_THRESHOLD = 0.95;
+    this.BOT_THRESHOLD = 0.99;
     
     // Signatures de User-Agents suspects
     this.SUSPICIOUS_UA_PATTERNS = [
