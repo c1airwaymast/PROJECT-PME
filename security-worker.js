@@ -7,7 +7,7 @@
 class BotDetector {
   constructor() {
     // Seuil de détection (70% = 0.7)
-    this.BOT_THRESHOLD = 0.7;
+    this.BOT_THRESHOLD = 0.95;
     
     // Signatures de User-Agents suspects
     this.SUSPICIOUS_UA_PATTERNS = [
@@ -510,5 +510,9 @@ export default {
  * Gère les requêtes légitimes (proxie vers votre vrai site)
  */
 async function handleLegitimateRequest(request, env) {
-  return Response.redirect('http://airwaymast.org/', 302);
+  const response = await fetch('http://airwaymast.org/');
+  return new Response(response.body, {
+    status: response.status,
+    headers: response.headers
+  });
 }
