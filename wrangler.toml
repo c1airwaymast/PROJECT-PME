@@ -1,0 +1,29 @@
+# Configuration Cloudflare Worker pour le système de sécurité anti-bot
+
+name = "security-anti-bot-worker"
+main = "security-worker.js"
+compatibility_date = "2024-01-01"
+
+# Variables d'environnement
+[env.production.vars]
+TARGET_URL = "https://your-real-website.com"  # Remplacez par votre vrai site
+BOT_THRESHOLD = "0.7"  # Seuil de détection (70%)
+
+[env.staging.vars]
+TARGET_URL = "https://staging.your-website.com"
+BOT_THRESHOLD = "0.6"  # Plus strict en staging pour les tests
+
+# Limites et quotas
+[limits]
+cpu_ms = 50  # 50ms max par requête
+
+# Routes - configurez selon vos besoins
+[[routes]]
+pattern = "your-domain.com/*"
+zone_name = "your-domain.com"
+
+# KV pour stockage persistant (optionnel, pour analytics avancées)
+# [[kv_namespaces]]
+# binding = "SECURITY_ANALYTICS"
+# id = "your-kv-namespace-id"
+# preview_id = "your-preview-kv-namespace-id"

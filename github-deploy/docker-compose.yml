@@ -1,0 +1,135 @@
+version: '3.8'
+
+services:
+  # Gateway de sécurité avec Nginx
+  security-gateway:
+    image: nginx:alpine
+    container_name: security-gateway
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DOMAIN1=${DOMAIN1:-secures.sbs}
+      - DOMAIN2=${DOMAIN2:-vantagenode.sbs}
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+      - ./certs:/etc/ssl/certs
+      - ./websites:/var/www/html
+      - ./logs:/var/log/nginx
+    networks:
+      - web-network
+    restart: unless-stopped
+    depends_on:
+      - security-monitor
+
+  # Base de données PostgreSQL sécurisée
+  secure-database:
+    image: postgres:15-alpine
+    container_name: secure-database
+    environment:
+      - POSTGRES_DB=hosting
+      - POSTGRES_USER=webuser
+      - POSTGRES_PASSWORD=SecurePass123!
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./db-init:/docker-entrypoint-initdb.d
+    networks:
+      - web-network
+    restart: unless-stopped
+
+  # Cache Redis pour performance
+  redis-cache:
+    image: redis:7-alpine
+    container_name: redis-cache
+    command: redis-server --requirepass RedisSecure123!
+    volumes:
+      - redis-data:/data
+    networks:
+      - web-network
+    restart: unless-stopped
+
+  # Système de monitoring de sécurité
+  security-monitor:
+    build: ./monitoring
+    container_name: security-monitor
+    environment:
+      - ALERT_EMAIL=${ADMIN_EMAIL}
+      - PIA_USERNAME=${PIA_USERNAME}
+      - PIA_PASSWORD=${PIA_PASSWORD}
+    volumes:
+      - ./logs:/var/log/security
+      - /var/log:/host/var/log:ro
+      - ./scripts:/opt/scripts
+    networks:
+      - web-network
+    restart: unless-stopped
+    privileged: true
+
+  # API de contrôle pour le panel admin
+  control-api:
+    build: ./api
+    container_name: control-api
+    environment:
+      - DATABASE_URL=postgresql://webuser:SecurePass123!@secure-database:5432/hosting
+      - REDIS_URL=redis://:RedisSecure123!@redis-cache:6379
+    volumes:
+      - ./logs:/var/log/api
+    networks:
+      - web-network
+    restart: unless-stopped
+    depends_on:
+      - secure-database
+      - redis-cache
+
+  # Service PIA Proxy pour rotation IP
+  pia-rotator:
+    build: ./pia
+    container_name: pia-rotator
+    environment:
+      - PIA_USERNAME=${PIA_USERNAME}
+      - PIA_PASSWORD=${PIA_PASSWORD}
+      - ROTATION_INTERVAL=300
+    volumes:
+      - ./pia-config:/etc/pia
+      - ./logs:/var/log/pia
+    networks:
+      - web-network
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    privileged: true
+
+  # Honeypots pour détecter les scanners
+  honeypot-ssh:
+    image: alpine:latest
+    container_name: honeypot-ssh
+    ports:
+      - "2222:22"
+    command: sh -c "while true; do nc -l -p 22 -e /bin/false; done"
+    networks:
+      - web-network
+    restart: unless-stopped
+
+  # Collecteur de logs centralisé
+  log-collector:
+    image: fluent/fluentd:latest
+    container_name: log-collector
+    volumes:
+      - ./logs:/fluentd/log
+      - ./fluentd:/fluentd/etc
+    networks:
+      - web-network
+    restart: unless-stopped
+
+networks:
+  web-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  db-data:
+    driver: local
+  redis-data:
+    driver: local

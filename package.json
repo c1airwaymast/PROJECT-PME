@@ -1,0 +1,29 @@
+{
+  "name": "security-anti-bot-worker",
+  "version": "1.0.0",
+  "description": "Système de sécurité anti-bot avancé pour Cloudflare Workers",
+  "main": "security-worker.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "deploy:staging": "wrangler deploy --env staging",
+    "deploy:production": "wrangler deploy --env production",
+    "tail": "wrangler tail",
+    "metrics": "wrangler metrics"
+  },
+  "keywords": [
+    "security",
+    "bot-detection",
+    "cloudflare-workers",
+    "anti-bot",
+    "ddos-protection"
+  ],
+  "author": "Security Team",
+  "license": "MIT",
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

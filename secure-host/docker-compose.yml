@@ -1,0 +1,208 @@
+# HÉBERGEUR ULTRA-SÉCURISÉ ET ISOLÉ
+# Système multi-conteneurs avec sécurité maximale
+
+version: '3.8'
+
+services:
+  # Reverse Proxy avec sécurité avancée
+  security-gateway:
+    build: ./security-gateway
+    ports:
+      - "443:443"
+      - "80:80"
+    environment:
+      - STEALTH_MODE=true
+      - SCAN_PROTECTION=maximum
+      - RATE_LIMIT=strict
+    volumes:
+      - ./certs:/etc/ssl/certs:ro
+      - ./logs:/var/log/security:rw
+    networks:
+      - dmz
+      - internal
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run
+
+  # Serveur Web Principal (Isolé)
+  web-server:
+    build: ./web-server
+    expose:
+      - "8080"
+    environment:
+      - NODE_ENV=production
+      - SECURITY_LEVEL=maximum
+      - DISABLE_HEADERS=true
+    volumes:
+      - ./app:/app:ro
+      - web-data:/app/data
+    networks:
+      - internal
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/tmp
+    user: "1000:1000"
+
+  # Système de Détection d'Intrusion
+  intrusion-detector:
+    build: ./ids
+    environment:
+      - ALERT_LEVEL=paranoid
+      - AUTO_BLOCK=true
+      - HONEYPOT_ENABLED=true
+    volumes:
+      - ./logs:/var/log/security:rw
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - internal
+      - monitoring
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_ADMIN
+    security_opt:
+      - no-new-privileges:true
+
+  # Firewall Intelligent
+  smart-firewall:
+    build: ./firewall
+    network_mode: host
+    privileged: true
+    environment:
+      - STEALTH_PORTS=true
+      - GEO_BLOCKING=true
+      - AI_DETECTION=true
+    volumes:
+      - ./firewall-rules:/etc/firewall:ro
+      - ./logs:/var/log/firewall:rw
+    restart: unless-stopped
+
+  # VPN Tunnel (Sortie sécurisée)
+  vpn-tunnel:
+    build: ./vpn
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - VPN_PROVIDER=custom
+      - ROTATE_IP=hourly
+      - KILL_SWITCH=true
+    volumes:
+      - ./vpn-config:/etc/openvpn:ro
+    networks:
+      - vpn-net
+    restart: unless-stopped
+
+  # Honeypot (Piège pour scanners)
+  honeypot:
+    build: ./honeypot
+    ports:
+      - "22:22"    # SSH piège
+      - "21:21"    # FTP piège
+      - "3389:3389" # RDP piège
+    environment:
+      - LOG_ATTACKS=true
+      - AUTO_BAN=true
+      - FAKE_SERVICES=all
+    volumes:
+      - ./logs:/var/log/honeypot:rw
+    networks:
+      - dmz
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+
+  # Monitoring et Alertes
+  security-monitor:
+    build: ./monitoring
+    environment:
+      - ALERT_WEBHOOK=your-webhook-url
+      - SCAN_INTERVAL=30
+      - THREAT_LEVEL=high
+    volumes:
+      - ./logs:/var/log:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - monitoring
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+
+  # Base de données sécurisée
+  secure-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=secureapp
+      - POSTGRES_USER=secureuser
+      - POSTGRES_PASSWORD_FILE=/run/secrets/db_password
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./db-init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - internal
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    secrets:
+      - db_password
+
+# Réseaux isolés
+networks:
+  dmz:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
+  internal:
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.21.0.0/24
+  monitoring:
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.22.0.0/24
+  vpn-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.23.0.0/24
+
+# Volumes sécurisés
+volumes:
+  web-data:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+  db-data:
+    driver: local
+    driver_opts:
+      o: bind
+      device: ./data/db
+
+# Secrets
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
