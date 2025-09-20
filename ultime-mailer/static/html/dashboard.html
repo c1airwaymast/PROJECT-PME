@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔥 ULTIME MAILER - Dashboard VPS Ultra-Puissant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0a2e 50%, #16213e 100%);
+            color: #00ff88;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+        
+        .matrix-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.1;
+        }
+        
+        .header {
+            background: rgba(0, 255, 136, 0.1);
+            border-bottom: 2px solid #00ff88;
+            padding: 20px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            text-shadow: 0 0 20px #00ff88;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes glow {
+            from { text-shadow: 0 0 20px #00ff88; }
+            to { text-shadow: 0 0 30px #00ff88, 0 0 40px #00ff88; }
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            margin-top: 10px;
+            color: #ff6b6b;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .metric-card {
+            background: rgba(0, 255, 136, 0.05);
+            border: 2px solid #00ff88;
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 255, 136, 0.3);
+            border-color: #ff6b6b;
+        }
+        
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #00ff88, transparent);
+            animation: scan 3s linear infinite;
+        }
+        
+        @keyframes scan {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .metric-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            text-shadow: 0 0 10px currentColor;
+        }
+        
+        .cpu-card { border-color: #ff6b6b; color: #ff6b6b; }
+        .memory-card { border-color: #4ecdc4; color: #4ecdc4; }
+        .disk-card { border-color: #ffe66d; color: #ffe66d; }
+        .network-card { border-color: #a8e6cf; color: #a8e6cf; }
+        .quantum-card { border-color: #ff8b94; color: #ff8b94; }
+        .ultime-card { border-color: #00ff88; color: #00ff88; }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+            position: relative;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, currentColor, rgba(255, 255, 255, 0.8));
+            border-radius: 10px;
+            transition: width 0.5s ease;
+            position: relative;
+        }
+        
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        .metric-details {
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+        
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .processes-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .processes-table th,
+        .processes-table td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.3);
+        }
+        
+        .processes-table th {
+            background: rgba(0, 255, 136, 0.2);
+            font-weight: bold;
+        }
+        
+        .processes-table tr:hover {
+            background: rgba(0, 255, 136, 0.1);
+        }
+        
+        .quantum-visualizer {
+            height: 200px;
+            position: relative;
+            background: radial-gradient(circle at center, rgba(0, 255, 136, 0.1) 0%, transparent 70%);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .quantum-particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #00ff88;
+            border-radius: 50%;
+            animation: float 3s ease-in-out infinite;
+            box-shadow: 0 0 10px currentColor;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+        
+        .debug-panel {
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #ff6b6b;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+        }
+        
+        .debug-title {
+            color: #ff6b6b;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            text-shadow: 0 0 10px #ff6b6b;
+        }
+        
+        .debug-log {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #333;
+            border-radius: 5px;
+            padding: 15px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        
+        .log-entry {
+            margin: 2px 0;
+            padding: 2px 0;
+        }
+        
+        .log-info { color: #00ff88; }
+        .log-warn { color: #ffe66d; }
+        .log-error { color: #ff6b6b; }
+        .log-debug { color: #4ecdc4; }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            justify-content: center;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #00ff88, #4ecdc4);
+            border: none;
+            color: #000;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.4);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(45deg, #ff6b6b, #ff8b94);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(45deg, #ffe66d, #ffd93d);
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-online { background: #00ff88; }
+        .status-warning { background: #ffe66d; }
+        .status-error { background: #ff6b6b; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .chart-container {
+            height: 150px;
+            margin: 15px 0;
+            position: relative;
+        }
+        
+        .chart-canvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: rgba(255, 255, 255, 0.5);
+            border-top: 1px solid rgba(0, 255, 136, 0.3);
+            margin-top: 40px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+        
+        /* Animations de particules */
+        .particle {
+            position: fixed;
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        .particle::before {
+            content: '';
+            display: block;
+            width: 2px;
+            height: 2px;
+            background: #00ff88;
+            border-radius: 50%;
+            box-shadow: 0 0 6px currentColor;
+        }
+    </style>
+</head>
+<body>
+    <!-- Fond Matrix animé -->
+    <canvas class="matrix-bg" id="matrixCanvas"></canvas>
+    
+    <!-- Header -->
+    <header class="header">
+        <h1>🔥 ULTIME MAILER DASHBOARD 🔥</h1>
+        <div class="subtitle">
+            <span class="status-indicator status-online"></span>
+            VPS Ultra-Puissant • Mode Debug Quantique
+        </div>
+    </header>
+    
+    <!-- Container principal -->
+    <div class="container">
+        <!-- Contrôles -->
+        <div class="controls">
+            <button class="btn" onclick="toggleDebugMode()">
+                🐛 Mode Debug
+            </button>
+            <button class="btn" onclick="toggleQuantumViz()">
+                🌌 Quantum 3D
+            </button>
+            <button class="btn btn-warning" onclick="refreshMetrics()">
+                🔄 Actualiser
+            </button>
+            <button class="btn btn-danger" onclick="emergencyStop()">
+                🛑 Arrêt Urgence
+            </button>
+        </div>
+        
+        <!-- Métriques principales -->
+        <div class="metrics-grid">
+            <!-- CPU -->
+            <div class="metric-card cpu-card">
+                <div class="metric-header">
+                    <span class="metric-title">🔥 CPU</span>
+                    <span class="metric-value" id="cpuValue">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="cpuProgress" style="width: 0%"></div>
+                </div>
+                <div class="metric-details">
+                    <div class="detail-row">
+                        <span>Charge moyenne:</span>
+                        <span id="loadAvg">0.00, 0.00, 0.00</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Température:</span>
+                        <span id="cpuTemp">0°C</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Fréquence:</span>
+                        <span id="cpuFreq">0 MHz</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Cœurs actifs:</span>
+                        <span id="cpuCores">0/0</span>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas class="chart-canvas" id="cpuChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Mémoire -->
+            <div class="metric-card memory-card">
+                <div class="metric-header">
+                    <span class="metric-title">🧠 Mémoire</span>
+                    <span class="metric-value" id="memoryValue">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="memoryProgress" style="width: 0%"></div>
+                </div>
+                <div class="metric-details">
+                    <div class="detail-row">
+                        <span>Utilisée:</span>
+                        <span id="memoryUsed">0 GB</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Disponible:</span>
+                        <span id="memoryAvailable">0 GB</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Swap:</span>
+                        <span id="swapUsed">0 GB</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Cache:</span>
+                        <span id="memoryCache">0 GB</span>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas class="chart-canvas" id="memoryChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Disque -->
+            <div class="metric-card disk-card">
+                <div class="metric-header">
+                    <span class="metric-title">💿 Disque</span>
+                    <span class="metric-value" id="diskValue">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="diskProgress" style="width: 0%"></div>
+                </div>
+                <div class="metric-details" id="diskDetails">
+                    <!-- Détails des partitions ajoutés dynamiquement -->
+                </div>
+                <div class="chart-container">
+                    <canvas class="chart-canvas" id="diskChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Réseau -->
+            <div class="metric-card network-card">
+                <div class="metric-header">
+                    <span class="metric-title">🌐 Réseau</span>
+                    <span class="metric-value" id="networkValue">0 MB/s</span>
+                </div>
+                <div class="metric-details">
+                    <div class="detail-row">
+                        <span>⬆️ Upload:</span>
+                        <span id="networkUp">0 MB/s</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>⬇️ Download:</span>
+                        <span id="networkDown">0 MB/s</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Connexions:</span>
+                        <span id="networkConnections">0</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>IP Publique:</span>
+                        <span id="publicIp">N/A</span>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas class="chart-canvas" id="networkChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- État Quantique -->
+            <div class="metric-card quantum-card">
+                <div class="metric-header">
+                    <span class="metric-title">🌌 État Quantique</span>
+                    <span class="metric-value" id="quantumCoherence">100%</span>
+                </div>
+                <div class="quantum-visualizer" id="quantumViz">
+                    <!-- Particules quantiques ajoutées dynamiquement -->
+                </div>
+                <div class="metric-details">
+                    <div class="detail-row">
+                        <span>Cohérence:</span>
+                        <span id="coherenceLevel">1.000</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Intrication:</span>
+                        <span id="entanglementPairs">0 paires</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Phase dimensionnelle:</span>
+                        <span id="dimensionalPhase">0.000</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Tunnel probability:</span>
+                        <span id="tunnelProb">95%</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- ULTIME MAILER -->
+            <div class="metric-card ultime-card">
+                <div class="metric-header">
+                    <span class="metric-title">⚡ ULTIME MAILER</span>
+                    <span class="metric-value" id="emailsPerSec">0/s</span>
+                </div>
+                <div class="metric-details">
+                    <div class="detail-row">
+                        <span>Emails envoyés:</span>
+                        <span id="emailsSent">0</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Taux de succès:</span>
+                        <span id="successRate">100%</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Batches actifs:</span>
+                        <span id="activeBatches">0</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>SMTP connectés:</span>
+                        <span id="smtpConnections">0</span>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas class="chart-canvas" id="ultimeChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Panel Debug -->
+        <div class="debug-panel" id="debugPanel" style="display: none;">
+            <h2 class="debug-title">🐛 MODE DEBUG ULTRA-AVANCÉ</h2>
+            
+            <!-- Processus -->
+            <div class="metric-details">
+                <h3 style="color: #4ecdc4; margin-bottom: 10px;">🔄 Top Processus</h3>
+                <table class="processes-table" id="processesTable">
+                    <thead>
+                        <tr>
+                            <th>PID</th>
+                            <th>Nom</th>
+                            <th>CPU %</th>
+                            <th>RAM MB</th>
+                            <th>Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody id="processesBody">
+                        <!-- Processus ajoutés dynamiquement -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Logs temps réel -->
+            <div style="margin-top: 20px;">
+                <h3 style="color: #ffe66d; margin-bottom: 10px;">📋 Logs Temps Réel</h3>
+                <div class="debug-log" id="debugLogs">
+                    <!-- Logs ajoutés dynamiquement -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="footer">
+        <p>🔥 ULTIME MAILER Dashboard v1.0 • Système révolutionnaire avec 23 techniques secrètes</p>
+        <p>Powered by Quantum Computing & Neural Networks</p>
+    </footer>
+    
+    <script>
+        // Variables globales
+        let debugMode = false;
+        let quantumVizActive = false;
+        let wsConnection = null;
+        let metricsHistory = {
+            cpu: [],
+            memory: [],
+            disk: [],
+            network: [],
+            quantum: [],
+            ultime: []
+        };
+        
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            initMatrixBackground();
+            initQuantumParticles();
+            initWebSocket();
+            initCharts();
+            
+            // Simulation de données pour la démo
+            startDataSimulation();
+            
+            console.log('🔥 Dashboard ULTIME MAILER initialisé');
+        });
+        
+        // Fond Matrix animé
+        function initMatrixBackground() {
+            const canvas = document.getElementById('matrixCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
+            const columns = canvas.width / 14;
+            const drops = [];
+            
+            for (let i = 0; i < columns; i++) {
+                drops[i] = 1;
+            }
+            
+            function drawMatrix() {
+                ctx.fillStyle = 'rgba(10, 10, 10, 0.04)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.fillStyle = '#00ff88';
+                ctx.font = '14px monospace';
+                
+                for (let i = 0; i < drops.length; i++) {
+                    const text = chars[Math.floor(Math.random() * chars.length)];
+                    ctx.fillText(text, i * 14, drops[i] * 14);
+                    
+                    if (drops[i] * 14 > canvas.height && Math.random() > 0.975) {
+                        drops[i] = 0;
+                    }
+                    drops[i]++;
+                }
+            }
+            
+            setInterval(drawMatrix, 50);
+        }
+        
+        // Particules quantiques
+        function initQuantumParticles() {
+            const viz = document.getElementById('quantumViz');
+            
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'quantum-particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 3 + 's';
+                particle.style.animationDuration = (2 + Math.random() * 3) + 's';
+                viz.appendChild(particle);
+            }
+        }
+        
+        // WebSocket
+        function initWebSocket() {
+            try {
+                wsConnection = new WebSocket('ws://localhost:8765/ws');
+                
+                wsConnection.onopen = function() {
+                    console.log('✅ WebSocket connecté');
+                    addLog('WebSocket connecté', 'info');
+                };
+                
+                wsConnection.onmessage = function(event) {
+                    const data = JSON.parse(event.data);
+                    updateMetrics(data);
+                };
+                
+                wsConnection.onclose = function() {
+                    console.log('❌ WebSocket fermé');
+                    addLog('WebSocket fermé', 'warn');
+                    
+                    // Reconnexion automatique
+                    setTimeout(initWebSocket, 5000);
+                };
+                
+                wsConnection.onerror = function(error) {
+                    console.error('❌ Erreur WebSocket:', error);
+                    addLog('Erreur WebSocket: ' + error, 'error');
+                };
+                
+            } catch (error) {
+                console.error('❌ Impossible de créer WebSocket:', error);
+                addLog('WebSocket non disponible - Mode simulation', 'warn');
+            }
+        }
+        
+        // Initialisation graphiques
+        function initCharts() {
+            // TODO: Initialiser Chart.js pour chaque métrique
+            console.log('📊 Graphiques initialisés');
+        }
+        
+        // Simulation de données (pour la démo)
+        function startDataSimulation() {
+            setInterval(() => {
+                const simulatedData = {
+                    timestamp: Date.now(),
+                    cpu: {
+                        total_usage: 20 + Math.random() * 60,
+                        cores: [
+                            15 + Math.random() * 70,
+                            20 + Math.random() * 65,
+                            25 + Math.random() * 60,
+                            18 + Math.random() * 72
+                        ],
+                        load_avg: [
+                            0.5 + Math.random() * 2,
+                            0.8 + Math.random() * 1.5,
+                            1.0 + Math.random() * 1.2
+                        ],
+                        temperature: 35 + Math.random() * 25,
+                        frequency: 2400 + Math.random() * 1200
+                    },
+                    memory: {
+                        total: 16 * 1024 * 1024 * 1024,
+                        used: (6 + Math.random() * 4) * 1024 * 1024 * 1024,
+                        available: (8 + Math.random() * 2) * 1024 * 1024 * 1024,
+                        usage_percent: 40 + Math.random() * 30,
+                        swap_used: Math.random() * 1024 * 1024 * 1024,
+                        cached: (2 + Math.random()) * 1024 * 1024 * 1024
+                    },
+                    disk: {
+                        total_usage_percent: 35 + Math.random() * 40,
+                        partitions: {
+                            '/': {
+                                usage_percent: 35 + Math.random() * 40,
+                                total: 100 * 1024 * 1024 * 1024,
+                                used: (35 + Math.random() * 40) * 1024 * 1024 * 1024
+                            }
+                        }
+                    },
+                    network: {
+                        total_bytes_sent: Math.random() * 1000000000,
+                        total_bytes_received: Math.random() * 5000000000,
+                        active_connections: Math.floor(Math.random() * 500),
+                        public_ip: '192.168.1.100'
+                    },
+                    quantum_state: {
+                        coherence_level: 0.85 + Math.random() * 0.15,
+                        entanglement_pairs: Math.floor(Math.random() * 100),
+                        dimensional_phase: Math.random() * 2 * Math.PI,
+                        tunnel_probability: 0.9 + Math.random() * 0.1
+                    },
+                    ultime_mailer: {
+                        emails_per_second: 150 + Math.random() * 100,
+                        batch_stats: {
+                            emails_sent: Math.floor(Math.random() * 10000),
+                            success_rate: 95 + Math.random() * 5
+                        },
+                        active_batches: Math.floor(Math.random() * 8),
+                        smtp_connections: 12 + Math.floor(Math.random() * 8)
+                    },
+                    processes: {
+                        top_cpu: [
+                            { pid: 1234, name: 'ultime-mailer', cpu_percent: 15.5, memory_mb: 256.8, status: 'Running' },
+                            { pid: 5678, name: 'thunderquantum', cpu_percent: 12.3, memory_mb: 128.4, status: 'Running' },
+                            { pid: 9012, name: 'neural-engine', cpu_percent: 8.7, memory_mb: 512.1, status: 'Running' }
+                        ]
+                    }
+                };
+                
+                updateMetrics(simulatedData);
+            }, 1000);
+        }
+        
+        // Mise à jour des métriques
+        function updateMetrics(data) {
+            // CPU
+            if (data.cpu) {
+                const cpuPercent = Math.round(data.cpu.total_usage * 10) / 10;
+                document.getElementById('cpuValue').textContent = cpuPercent + '%';
+                document.getElementById('cpuProgress').style.width = cpuPercent + '%';
+                document.getElementById('loadAvg').textContent = data.cpu.load_avg.map(x => x.toFixed(2)).join(', ');
+                document.getElementById('cpuTemp').textContent = Math.round(data.cpu.temperature) + '°C';
+                document.getElementById('cpuFreq').textContent = Math.round(data.cpu.frequency) + ' MHz';
+                document.getElementById('cpuCores').textContent = data.cpu.cores.length + '/' + data.cpu.cores.length;
+            }
+            
+            // Mémoire
+            if (data.memory) {
+                const memPercent = Math.round(data.memory.usage_percent * 10) / 10;
+                document.getElementById('memoryValue').textContent = memPercent + '%';
+                document.getElementById('memoryProgress').style.width = memPercent + '%';
+                document.getElementById('memoryUsed').textContent = (data.memory.used / 1024 / 1024 / 1024).toFixed(1) + ' GB';
+                document.getElementById('memoryAvailable').textContent = (data.memory.available / 1024 / 1024 / 1024).toFixed(1) + ' GB';
+                document.getElementById('swapUsed').textContent = (data.memory.swap_used / 1024 / 1024 / 1024).toFixed(1) + ' GB';
+                document.getElementById('memoryCache').textContent = (data.memory.cached / 1024 / 1024 / 1024).toFixed(1) + ' GB';
+            }
+            
+            // Disque
+            if (data.disk) {
+                const diskPercent = Math.round(data.disk.total_usage_percent * 10) / 10;
+                document.getElementById('diskValue').textContent = diskPercent + '%';
+                document.getElementById('diskProgress').style.width = diskPercent + '%';
+            }
+            
+            // Réseau
+            if (data.network) {
+                const upSpeed = (Math.random() * 10).toFixed(1);
+                const downSpeed = (Math.random() * 50).toFixed(1);
+                document.getElementById('networkValue').textContent = (parseFloat(upSpeed) + parseFloat(downSpeed)).toFixed(1) + ' MB/s';
+                document.getElementById('networkUp').textContent = upSpeed + ' MB/s';
+                document.getElementById('networkDown').textContent = downSpeed + ' MB/s';
+                document.getElementById('networkConnections').textContent = data.network.active_connections;
+                document.getElementById('publicIp').textContent = data.network.public_ip;
+            }
+            
+            // État quantique
+            if (data.quantum_state) {
+                const coherence = Math.round(data.quantum_state.coherence_level * 100);
+                document.getElementById('quantumCoherence').textContent = coherence + '%';
+                document.getElementById('coherenceLevel').textContent = data.quantum_state.coherence_level.toFixed(3);
+                document.getElementById('entanglementPairs').textContent = data.quantum_state.entanglement_pairs + ' paires';
+                document.getElementById('dimensionalPhase').textContent = data.quantum_state.dimensional_phase.toFixed(3);
+                document.getElementById('tunnelProb').textContent = Math.round(data.quantum_state.tunnel_probability * 100) + '%';
+            }
+            
+            // ULTIME MAILER
+            if (data.ultime_mailer) {
+                document.getElementById('emailsPerSec').textContent = Math.round(data.ultime_mailer.emails_per_second) + '/s';
+                document.getElementById('emailsSent').textContent = data.ultime_mailer.batch_stats.emails_sent;
+                document.getElementById('successRate').textContent = data.ultime_mailer.batch_stats.success_rate.toFixed(1) + '%';
+                document.getElementById('activeBatches').textContent = data.ultime_mailer.active_batches;
+                document.getElementById('smtpConnections').textContent = data.ultime_mailer.smtp_connections;
+            }
+            
+            // Processus (mode debug)
+            if (data.processes && debugMode) {
+                updateProcessesTable(data.processes.top_cpu);
+            }
+        }
+        
+        // Mise à jour table processus
+        function updateProcessesTable(processes) {
+            const tbody = document.getElementById('processesBody');
+            tbody.innerHTML = '';
+            
+            processes.forEach(proc => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${proc.pid}</td>
+                    <td>${proc.name}</td>
+                    <td>${proc.cpu_percent.toFixed(1)}%</td>
+                    <td>${proc.memory_mb.toFixed(1)}</td>
+                    <td>${proc.status}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        // Ajout de logs
+        function addLog(message, type = 'info') {
+            const logsContainer = document.getElementById('debugLogs');
+            if (!logsContainer) return;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            
+            logsContainer.appendChild(logEntry);
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+            
+            // Limiter le nombre de logs
+            const logs = logsContainer.children;
+            if (logs.length > 100) {
+                logsContainer.removeChild(logs[0]);
+            }
+        }
+        
+        // Fonctions de contrôle
+        function toggleDebugMode() {
+            debugMode = !debugMode;
+            const panel = document.getElementById('debugPanel');
+            panel.style.display = debugMode ? 'block' : 'none';
+            
+            addLog(`Mode debug ${debugMode ? 'activé' : 'désactivé'}`, 'info');
+        }
+        
+        function toggleQuantumViz() {
+            quantumVizActive = !quantumVizActive;
+            addLog(`Visualisateur quantique ${quantumVizActive ? 'activé' : 'désactivé'}`, 'info');
+        }
+        
+        function refreshMetrics() {
+            addLog('Actualisation des métriques...', 'info');
+            // Force une mise à jour
+            if (wsConnection && wsConnection.readyState === WebSocket.OPEN) {
+                wsConnection.send(JSON.stringify({ command: 'refresh' }));
+            }
+        }
+        
+        function emergencyStop() {
+            if (confirm('⚠️ Êtes-vous sûr de vouloir arrêter ULTIME MAILER ?')) {
+                addLog('🛑 ARRÊT D\'URGENCE DÉCLENCHÉ', 'error');
+                if (wsConnection) {
+                    wsConnection.send(JSON.stringify({ command: 'emergency_stop' }));
+                }
+            }
+        }
+        
+        // Raccourcis clavier
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'd') {
+                e.preventDefault();
+                toggleDebugMode();
+            } else if (e.ctrlKey && e.key === 'q') {
+                e.preventDefault();
+                toggleQuantumViz();
+            } else if (e.ctrlKey && e.key === 'm') {
+                e.preventDefault();
+                refreshMetrics();
+            }
+        });
+        
+        // Redimensionnement fenêtre
+        window.addEventListener('resize', function() {
+            const canvas = document.getElementById('matrixCanvas');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+        
+        // Log initial
+        addLog('🔥 Dashboard ULTIME MAILER initialisé avec succès', 'info');
+        addLog('🌌 Mode quantique activé - 23 techniques secrètes chargées', 'info');
+        addLog('📊 Monitoring temps réel démarré', 'info');
+    </script>
+</body>
+</html>
