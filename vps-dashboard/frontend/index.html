@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔥 VPS Dashboard Ultra-Performant 🔥</title>
+    <link rel="stylesheet" href="../static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header avec contrôles -->
+        <header class="header">
+            <div class="header-left">
+                <h1><i class="fas fa-server"></i> VPS Dashboard Ultra</h1>
+                <div class="connection-status" id="connectionStatus">
+                    <i class="fas fa-circle"></i>
+                    <span>Connexion...</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="btn-debug" id="debugToggle">
+                    <i class="fas fa-bug"></i> Mode Debug
+                </button>
+                <button class="btn-refresh" id="refreshBtn">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <button class="btn-fullscreen" id="fullscreenBtn">
+                    <i class="fas fa-expand"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Alertes -->
+        <div class="alerts-container" id="alertsContainer">
+            <!-- Les alertes seront ajoutées dynamiquement -->
+        </div>
+
+        <!-- Métriques principales -->
+        <div class="metrics-grid">
+            <!-- CPU -->
+            <div class="metric-card cpu-card">
+                <div class="metric-header">
+                    <h3><i class="fas fa-microchip"></i> CPU</h3>
+                    <span class="metric-value" id="cpuValue">0%</span>
+                </div>
+                <div class="metric-visual">
+                    <div class="progress-ring">
+                        <svg width="120" height="120">
+                            <circle cx="60" cy="60" r="50" class="progress-ring-bg"></circle>
+                            <circle cx="60" cy="60" r="50" class="progress-ring-fill" id="cpuRing"></circle>
+                        </svg>
+                        <div class="progress-text" id="cpuPercent">0%</div>
+                    </div>
+                </div>
+                <div class="metric-details" id="cpuDetails">
+                    <div class="detail-item">
+                        <span>Charge moyenne:</span>
+                        <span id="loadAvg">0.00</span>
+                    </div>
+                    <div class="detail-item">
+                        <span>Cœurs:</span>
+                        <span id="cpuCores">0</span>
+                    </div>
+                </div>
+                <canvas id="cpuChart" width="300" height="100"></canvas>
+            </div>
+
+            <!-- Mémoire -->
+            <div class="metric-card memory-card">
+                <div class="metric-header">
+                    <h3><i class="fas fa-memory"></i> Mémoire</h3>
+                    <span class="metric-value" id="memoryValue">0%</span>
+                </div>
+                <div class="metric-visual">
+                    <div class="progress-ring">
+                        <svg width="120" height="120">
+                            <circle cx="60" cy="60" r="50" class="progress-ring-bg"></circle>
+                            <circle cx="60" cy="60" r="50" class="progress-ring-fill" id="memoryRing"></circle>
+                        </svg>
+                        <div class="progress-text" id="memoryPercent">0%</div>
+                    </div>
+                </div>
+                <div class="metric-details" id="memoryDetails">
+                    <div class="detail-item">
+                        <span>Utilisée:</span>
+                        <span id="memoryUsed">0 GB</span>
+                    </div>
+                    <div class="detail-item">
+                        <span>Disponible:</span>
+                        <span id="memoryAvailable">0 GB</span>
+                    </div>
+                </div>
+                <canvas id="memoryChart" width="300" height="100"></canvas>
+            </div>
+
+            <!-- Disque -->
+            <div class="metric-card disk-card">
+                <div class="metric-header">
+                    <h3><i class="fas fa-hdd"></i> Disque</h3>
+                    <span class="metric-value" id="diskValue">0%</span>
+                </div>
+                <div class="metric-visual">
+                    <div class="progress-ring">
+                        <svg width="120" height="120">
+                            <circle cx="60" cy="60" r="50" class="progress-ring-bg"></circle>
+                            <circle cx="60" cy="60" r="50" class="progress-ring-fill" id="diskRing"></circle>
+                        </svg>
+                        <div class="progress-text" id="diskPercent">0%</div>
+                    </div>
+                </div>
+                <div class="metric-details" id="diskDetails">
+                    <!-- Les détails du disque seront ajoutés dynamiquement -->
+                </div>
+                <canvas id="diskChart" width="300" height="100"></canvas>
+            </div>
+
+            <!-- Réseau -->
+            <div class="metric-card network-card">
+                <div class="metric-header">
+                    <h3><i class="fas fa-network-wired"></i> Réseau</h3>
+                    <span class="metric-value" id="networkValue">0 MB/s</span>
+                </div>
+                <div class="metric-visual">
+                    <div class="network-stats">
+                        <div class="network-stat">
+                            <i class="fas fa-arrow-up"></i>
+                            <span id="networkUp">0 MB/s</span>
+                        </div>
+                        <div class="network-stat">
+                            <i class="fas fa-arrow-down"></i>
+                            <span id="networkDown">0 MB/s</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="metric-details" id="networkDetails">
+                    <div class="detail-item">
+                        <span>Connexions:</span>
+                        <span id="networkConnections">0</span>
+                    </div>
+                    <div class="detail-item">
+                        <span>IP Publique:</span>
+                        <span id="publicIp">N/A</span>
+                    </div>
+                </div>
+                <canvas id="networkChart" width="300" height="100"></canvas>
+            </div>
+        </div>
+
+        <!-- Processus et système -->
+        <div class="secondary-grid">
+            <!-- Processus -->
+            <div class="info-card processes-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-tasks"></i> Processus Actifs</h3>
+                    <span class="card-value" id="processCount">0</span>
+                </div>
+                <div class="processes-table">
+                    <table id="processesTable">
+                        <thead>
+                            <tr>
+                                <th>PID</th>
+                                <th>Nom</th>
+                                <th>CPU %</th>
+                                <th>RAM MB</th>
+                                <th>Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody id="processesBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Système -->
+            <div class="info-card system-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-info-circle"></i> Informations Système</h3>
+                </div>
+                <div class="system-info" id="systemInfo">
+                    <!-- Les informations système seront ajoutées dynamiquement -->
+                </div>
+            </div>
+
+            <!-- GPU (si disponible) -->
+            <div class="info-card gpu-card" id="gpuCard" style="display: none;">
+                <div class="card-header">
+                    <h3><i class="fas fa-desktop"></i> GPU</h3>
+                </div>
+                <div class="gpu-info" id="gpuInfo">
+                    <!-- Les informations GPU seront ajoutées dynamiquement -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Mode Debug Panel -->
+        <div class="debug-panel" id="debugPanel" style="display: none;">
+            <div class="debug-header">
+                <h3><i class="fas fa-bug"></i> Mode Debug Ultra-Performant</h3>
+                <button class="debug-close" id="debugClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="debug-tabs">
+                <button class="debug-tab active" data-tab="performance">Performance</button>
+                <button class="debug-tab" data-tab="cache">Cache</button>
+                <button class="debug-tab" data-tab="network">Réseau</button>
+                <button class="debug-tab" data-tab="security">Sécurité</button>
+                <button class="debug-tab" data-tab="logs">Logs</button>
+            </div>
+
+            <div class="debug-content">
+                <!-- Performance Tab -->
+                <div class="debug-tab-content active" id="debugPerformance">
+                    <div class="debug-metrics">
+                        <div class="debug-metric">
+                            <span>Taux de cache hit:</span>
+                            <span id="cacheHitRate">95%</span>
+                        </div>
+                        <div class="debug-metric">
+                            <span>Temps de réponse moyen:</span>
+                            <span id="avgResponseTime">1ms</span>
+                        </div>
+                        <div class="debug-metric">
+                            <span>Requêtes/seconde:</span>
+                            <span id="requestsPerSecond">100</span>
+                        </div>
+                        <div class="debug-metric">
+                            <span>Efficacité mémoire:</span>
+                            <span id="memoryEfficiency">85%</span>
+                        </div>
+                    </div>
+                    <canvas id="debugPerformanceChart" width="400" height="200"></canvas>
+                </div>
+
+                <!-- Cache Tab -->
+                <div class="debug-tab-content" id="debugCache">
+                    <div class="cache-stats" id="cacheStats">
+                        <!-- Stats du cache -->
+                    </div>
+                </div>
+
+                <!-- Network Tab -->
+                <div class="debug-tab-content" id="debugNetwork">
+                    <div class="network-debug" id="networkDebug">
+                        <!-- Debug réseau -->
+                    </div>
+                </div>
+
+                <!-- Security Tab -->
+                <div class="debug-tab-content" id="debugSecurity">
+                    <div class="security-events" id="securityEvents">
+                        <!-- Événements sécurité -->
+                    </div>
+                </div>
+
+                <!-- Logs Tab -->
+                <div class="debug-tab-content" id="debugLogs">
+                    <div class="logs-container">
+                        <div class="logs-controls">
+                            <button class="btn-small" id="clearLogs">Effacer</button>
+                            <button class="btn-small" id="pauseLogs">Pause</button>
+                        </div>
+                        <div class="logs-output" id="logsOutput">
+                            <!-- Logs en temps réel -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../static/js/dashboard.js"></script>
+</body>
+</html>
