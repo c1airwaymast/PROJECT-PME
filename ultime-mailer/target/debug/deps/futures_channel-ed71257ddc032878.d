@@ -1,0 +1,10 @@
+/workspace/ultime-mailer/target/debug/deps/libfutures_channel-ed71257ddc032878.rmeta: /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-channel-0.3.31/src/lib.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-channel-0.3.31/src/lock.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-channel-0.3.31/src/mpsc/mod.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-channel-0.3.31/src/mpsc/queue.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-channel-0.3.31/src/mpsc/sink_impl.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-channel-0.3.31/src/oneshot.rs
+
+/workspace/ultime-mailer/target/debug/deps/futures_channel-ed71257ddc032878.d: /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-channel-0.3.31/src/lib.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-channel-0.3.31/src/lock.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-channel-0.3.31/src/mpsc/mod.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-channel-0.3.31/src/mpsc/queue.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-channel-0.3.31/src/mpsc/sink_impl.rs /usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-channel-0.3.31/src/oneshot.rs
+
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-channel-0.3.31/src/lib.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-channel-0.3.31/src/lock.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-channel-0.3.31/src/mpsc/mod.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-channel-0.3.31/src/mpsc/queue.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-channel-0.3.31/src/mpsc/sink_impl.rs:
+/usr/local/cargo/registry/src/index.crates.io-6f17d22bba15001f/futures-channel-0.3.31/src/oneshot.rs:

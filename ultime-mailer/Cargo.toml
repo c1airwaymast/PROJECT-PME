@@ -1,0 +1,46 @@
+[package]
+name = "ultime-mailer"
+version = "1.0.0"
+edition = "2021"
+description = "🔥 ULTIME MAILER - Système d'envoi d'emails révolutionnaire ultra-performant"
+
+[dependencies]
+# 🚀 Performance & Async Runtime
+tokio = { version = "1.35", features = ["full"] }
+futures = "0.3"
+
+# ⚙️ Configuration & Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.9"
+serde_json = "1.0"
+
+# 🔐 Security & Cryptography
+uuid = { version = "1.6", features = ["v4", "fast-rng"] }
+sha2 = "0.10"
+base64 = "0.21"
+rand = "0.8"
+
+# 🌐 HTTP & WebSocket pour Dashboard
+warp = "0.3"
+
+# 📊 Monitoring & Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+colored = "2.0"
+
+# 🎯 CLI & Terminal
+clap = { version = "4.4", features = ["derive"] }
+
+# 🔄 Data Structures & Utilities
+chrono = { version = "0.4", features = ["serde"] }
+
+# 🛠️ Error Handling
+anyhow = "1.0"
+
+[[bin]]
+name = "ultime-mailer"
+path = "src/main.rs"
+
+[[bin]]
+name = "ultime-dashboard"
+path = "src/bin/dashboard.rs"
